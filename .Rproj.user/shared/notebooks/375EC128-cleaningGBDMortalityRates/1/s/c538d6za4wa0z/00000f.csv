@@ -1,5 +1,5 @@
-"0","#> reading in the raw .csv file for mortality rates dataset from GBD for the year mentioned uptop in the ""libGlobParameters"" code chunk
-mr_dataset_2019 <- read_csv(""./data-raw/ihme_gbd_2019_mortality_rates_by_cause.csv"")
+"0","#> reading in the raw .csv file for mortality rates dataset from GBD for the year mentioned uptop in the ""lib_glob_parameters"" code chunk
+mr_dataset_2019_raw <- read_csv(""./data/raw/ihme_gbd_2019_mortality_rates_by_cause.csv"")
 "
 "1","[1mRows: [22m[34m312[39m [1mColumns: [22m[34m16[39m
 "

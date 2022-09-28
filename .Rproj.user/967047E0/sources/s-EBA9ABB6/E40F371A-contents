@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 # Global parameters and libraries
-```{r libGlobParameters}
+```{r lib_glob_parameters}
 
 # libraries
 library(readr)
@@ -47,18 +47,22 @@ gbd_year <- 2019
   * val > mortal_rate
   * sex_name > sex, 
   * cause_name > cause
-* remove the word "years" from the "age_name" column
-* Drop certain rows:
-  * **(Why?)**Where Age intervals is one of: Neonatal, [0, 1], [5, 14], [15, 49], [50, 69], [70, inf], [80, inf], [10, 24], [10, 54], [10, 19]. It looks like that from one year to the next, the `age_ids` to `age_name` mapping remains the same in GBD. But, still check this in the GBD dataset that you are using. If the mapping has changed, just make sure that you drop those `age_ids` that correspond to the following `age_names` listed earlier in this point.
 
+* Drop certain rows:
+  * **(Why?)**Where Age intervals is one of: All Ages, Age Standardized, Neonatal, [5, 14], [15, 49], [50, 69], [70, inf], [80, inf], [10, 24], [10, 54], [10, 19]. It looks like that from one year to the next, the `age_ids` to `age_name` mapping remains the same in GBD. But, still check this in the GBD dataset that you are using. If the mapping has changed, just make sure that you drop those `age_ids` that correspond to the following `age_names` listed earlier in this point.
+* Drop all rows with cause == "All causes"
+* Replace `age_name` column's following age_names: "Under 5" (age id: 1), "<1" (age_id: 235), "<20" (age id: 158) with: "0-5", "0-1", "0-20" respectively
+* remove the word "years" from the "age_name" column
+* Add an `age_interval_lower` column, which would be the lower limit of the `age_name` column.
+* Replace `age_interval_lower` "95 plus years" value with "95" and "80+ years" value with 80.
 ```{r}
-#> reading in the raw .csv file for mortality rates dataset from GBD for the year mentioned uptop in the "libGlobParameters" code chunk
-mr_dataset_2019 <- read_csv("./data-raw/ihme_gbd_2019_mortality_rates_by_cause.csv")
+#> reading in the raw .csv file for mortality rates dataset from GBD for the year mentioned uptop in the "lib_glob_parameters" code chunk
+mr_dataset_2019_raw <- read_csv("./data/raw/ihme_gbd_2019_mortality_rates_by_cause.csv")
 
 #> drop certain columns and rename others to make them more intuitive
 
 #> rename "cause_name" and "val" columns, arrange by (cause, age_id) and keep the following columns: age_id, age_name, cause_name, val.
-mr_dataset_2019 <- mr_dataset_2019 %>%
+mr_dataset_2019 <- mr_dataset_2019_raw %>%
     rename(cause = cause_name, 
          mortal_rate = val, 
          sex = sex_name) %>%
@@ -67,14 +71,26 @@ mr_dataset_2019 <- mr_dataset_2019 %>%
 
 #> filter out certain rows based on conditions mentioned above
 
-# drop the following age_ids: 23, 24, 25, 26, 28, 159, 162, 169
+# drop the following age_ids: 23, 24, 25, 26, 28, 159, 162, 169 na
 
 ## drop age ids vector
-drop_age_id_vec <- c(21, 23, 24, 25, 26, 28, 159, 162, 169)
+drop_age_id_vec <- c(21, 22, 23, 24, 25, 26, 27, 159, 162, 169)
 mr_dataset_2019 <- mr_dataset_2019 %>%
   filter(age_id %notin% drop_age_id_vec, 
          cause %notin% "All causes") 
-  
+
+## Replace `age_name` column's following age_names: "Under 5" (age id: 1), "<1" (age_id: 235), "<20" (age id: 158) with: "0-5", "0-1", "0-20" respectively
+
+mr_dataset_2019 <- mr_dataset_2019 %>%
+  mutate(age_name = str_replace(age_name, "<5 years", "0-5"), 
+         age_name = str_replace(age_name,  "<1 year", "0-1"), 
+         age_name = str_replace(age_name, "<20 years", "0-20"))
+
+## Remove the word "years" from the age_name column
+
+## Add an `age_interval_lower` column, which would be the lower limit of the `age_name` column
+
+## Replace `age_interval_lower` "95 plus years" value with "95" and "80+ years" value with 80
   
 
 ```
