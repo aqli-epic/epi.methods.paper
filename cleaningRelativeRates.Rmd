@@ -1,0 +1,87 @@
+---
+title: "Cleaning Relative Risks File"
+author: "Aarsh"
+date: '2022-10-04'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Global parameters and libraries
+```{r lib_glob_parameters}
+
+# libraries
+library(readr)
+library(dplyr)
+library(stringr)
+library(magrittr)
+library(ggplot2)
+library(readr)
+library(tidytext)
+library(tidyr)
+library(tidyverse)
+library(sf)
+library(usethis)
+library(devtools)
+library(readxl)
+
+# load and document (for automatic rendering of the roxygen comments into a man file) to keep things updated
+devtools::load_all()
+devtools::document()
+
+# custom operators
+`%notin%` <- Negate(`%in%`)
+
+# global parameters 
+gbd_year <- 2019
+
+```
+
+## Cleaning the relative rates file
+
+```{r cleanRelativeRatesRawFile}
+
+#> reading in the raw .xlsx file for relative risks dataset from GBD for the year mentioned up top in the "lib_glob_parameters" code chunk
+rr_dataset_2019_raw <- readxl::read_xlsx("./data/raw/ihme_gbd_2019_relative_risks_by_cause.xlsx")
+
+#> creating a copy of the raw dataset and then using that for all analysis
+rr_dataset_2019 <- rr_dataset_2019_raw
+
+#> adding some basic structure to the raw data file such that we can clearly recognize the column names before we start cleaning. In doing so, remove the unnecessary descritive information from the file and only keep the information that is relevant for analysis.
+
+# assign column names, which as of now are present in different rows (because the raw file was formatted this way).
+colnames(rr_dataset_2019)[1:4] <- rr_dataset_2019[1, 1:4] 
+colnames(rr_dataset_2019)[5:ncol(rr_dataset_2019)] <- rr_dataset_2019[2, 5:ncol(rr_dataset_2019)] 
+
+# getting rid of first and second row of the dataset because they contain "column name" information, which has already been placed in its proper place in the step above.
+rr_dataset_2019 <- rr_dataset_2019[4:nrow(rr_dataset_2019), ]
+
+# rename certain columns (just removing spaces in between and converting to snake case)
+colnames(rr_dataset_2019)[1] <- "cause" # "Risk/Outcome" column renamed to "Cause"
+colnames(rr_dataset_2019)[2] <- "pm_level"
+colnames(rr_dataset_2019)[3] <- "mortality_morbidity"
+colnames(rr_dataset_2019)[4] <- "sex"
+colnames(rr_dataset_2019)[5] <- "all_ages"
+
+# removing the word "years" from the "ages" column names and also remove  any "+" signs in age columns (e.g. "95+")
+age_name_column_names_vec <- colnames(rr_dataset_2019)[str_detect(colnames(rr_dataset_2019), "years")]
+age_name_column_names_vec_years_removed <- str_replace(age_name_column_names_vec, "years", "")
+age_name_column_names_vec_years_removed <- str_replace(age_name_column_names_vec_years_removed, "\\+", "")
+
+# rename "ages" column using the new "years removed age column names"
+colnames(rr_dataset_2019)[str_detect(colnames(rr_dataset_2019), "years")] <- age_name_column_names_vec_years_removed
+
+# remove the "µg/m³" sign from the pm_level column
+rr_dataset_2019[, "pm_level"] <- str_remove(as.vector(unlist(rr_dataset_2019[, "pm_level"])), "µg/m³")
+
+# keep only the relative risks numbers and remove all confidence interval information from all columns. For example: if we have this: "2.345 (1.234 to 3.232)", after cleaning we should be left with "2.345".
+rr_dataset_2019[, 5:ncol(rr_dataset_2019)] <- map_dfc(rr_dataset_2019[, 5:ncol(rr_dataset_2019)], function(x){as.numeric(str_replace(x, "\\(.+\\)$", ""))})
+
+
+
+
+
+```
+
