@@ -94,5 +94,12 @@ mr_dataset_2019 <- mr_dataset_2019 %>%
          age_interval = age_name) %>%
   select(-c(age_id))
 
+#> Writing the cleaned GBD mortality rates file to the data/intermediate folder
+mr_dataset_2019 %>%
+  write_csv("data/intermediate/cleaned_gbd_mortality_rates.csv")
+
+# next step is to merge this dataset with the cleaned relative risks dataset, which will happen in the "calc_mortality_rates.Rmd" file
+
+
 ```
 

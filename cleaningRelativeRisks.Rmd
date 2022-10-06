@@ -84,9 +84,9 @@ rr_dataset_2019[, 5:ncol(rr_dataset_2019)] <- map_dfc(rr_dataset_2019[, 5:ncol(r
 rr_dataset_2019 <- rr_dataset_2019 %>%
   select(-c(mortality_morbidity, sex))
 
-# impute relative risk values for all age categories of the following causes: "Lower Respiratory Infections", "Tracheal, Bronchus and lung cancer", "Chronic Obstructive Pulmonary Disease", "Diabetes mellitus type 2" by using the "all_ages" column relative risks. The assumption is that relative risks for these diseases do not vary by age, so the imputation simply copies the "all_ages" column number for a given cause "x" (the ones listed in this paragraph) into all other age categories for cause "x". Need to check if this assumption is actually backed by solid research. 
+#> impute relative risk values for all age categories of the following causes: "Lower Respiratory Infections", "Tracheal, Bronchus and lung cancer", "Chronic Obstructive Pulmonary Disease", "Diabetes mellitus type 2" by using the "all_ages" column relative risks. The assumption is that relative risks for these diseases do not vary by age, so the imputation simply copies the "all_ages" column number for a given cause "x" (the ones listed in this paragraph) into all other age categories for cause "x". Need to check if this assumption is actually backed by solid research. 
 
-# Note that it is possible that in the coming years, age wise relative risks data starts to become available for the above 4 causes. This is why the vector named "age_wise_rr_data_not_available" below may change (and has to be accordingly updated) from one year to the next. Please make sure to do so before running the code.
+#> Note that it is possible that in the coming years, age wise relative risks data starts to become available for the above 4 causes. This is why the vector named "age_wise_rr_data_not_available" below may change (and has to be accordingly updated) from one year to the next. Please make sure to do so before running the code.
 age_wise_rr_data_available <- c("Ischaemic heart disease", "Stroke")
 
 # list of all "unique" causes in the relative risks data
@@ -104,20 +104,24 @@ for(i in 1:nrow(rr_dataset_2019)){
  }
 }
 
-# now we don't need the "all_ages" column so I am dropping it
+#> now we don't need the "all_ages" column so I am dropping it
 rr_dataset_2019 <- rr_dataset_2019 %>%
   select(-c(all_ages))
 
-# reshaping the above dataset to a long format, so that age category becomes a single column. Note: there is an additional space in each of the age cateogry column names. For example: the column name "25-29" is actually "25-29 ".
+#> reshaping the above dataset to a long format, so that age category becomes a single column. Note: there is an additional space in each of the age cateogry column names. For example: the column name "25-29" is actually "25-29 ".
 rr_dataset_2019_long <- rr_dataset_2019 %>%
   pivot_longer(cols = `25-29 `:`95 `, names_to = "age_interval", values_to = "relative_risk")
 
-# add an age_interval_lower column to the relative risks dataset
+#> add an age_interval_lower column to the relative risks dataset
 rr_dataset_2019_long <- rr_dataset_2019_long %>%
   mutate(age_interval_ll = str_extract(age_interval, "(.+)-"), 
          age_interval_ll = str_extract(age_interval_ll, "[^-]+"), 
          age_interval_ul = str_extract(age_interval, "-(.+)"), 
          age_interval_ul = str_extract(age_interval_ul, "[^-]+"))
+
+#> writing the cleaned relative risks file to the data/intermediate folder 
+rr_dataset_2019_long %>%
+  write_csv("./data/intermediate/cleaned_relative_risks.csv")
 
 # next step is to merge this dataset with the cleaned mortality rates dataset, which will happen in the "calc_mortality_rates.Rmd" file
 
