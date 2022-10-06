@@ -84,5 +84,15 @@ mr_dataset_2019 <- mr_dataset_2019 %>%
          age_name_ul = ifelse(str_detect(age_name, "\\+") == TRUE, str_replace(age_name, "\\+", "") , str_extract(age_name, "(-)(.)+")), 
          age_name_ul = str_replace(age_name_ul, "(\\+)|(-)", ""), 
           age_name = str_replace(age_name, "(\\+)", ""))
+
+#> renaming columns so that we are consistent with the "relative risks" dataset column names. Ultimately th "relative risks" data will be merged with the "mortality rates" dataset. Consistent column names will make the merging code more intuitive. Also, dropping the "age_id" column which is standalone column in the mortality rates datset and does not have a counterpart in the relative risks dataset (so basically is of no use to us).
+
+mr_dataset_2019 <- mr_dataset_2019 %>%
+  rename(mortality_rate = mortal_rate, 
+         age_interval_ll = age_name_ll,
+         age_interval_ul = age_name_ul, 
+         age_interval = age_name) %>%
+  select(-c(age_id))
+
 ```
 
