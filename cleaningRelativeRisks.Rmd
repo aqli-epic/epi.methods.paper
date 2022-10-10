@@ -117,10 +117,27 @@ rr_dataset_2019_long <- rr_dataset_2019_long %>%
   mutate(age_interval_ll = str_extract(age_interval, "(.+)-"), 
          age_interval_ll = str_extract(age_interval_ll, "[^-]+"), 
          age_interval_ul = str_extract(age_interval, "-(.+)"), 
-         age_interval_ul = str_extract(age_interval_ul, "[^-]+"))
+         age_interval_ul = str_extract(age_interval_ul, "[^-]+"), 
+         age_interval_ll = ifelse(str_detect(age_interval, "95"), 95, age_interval_ll), 
+         age_interval_ul = ifelse(str_detect(age_interval, "95"), 95, age_interval_ul))
+
+#> encode the "cause" column for consistency, i.e. create a new column called "cause_id" that will map 
+#> each "cause_name" to a corresponding identifier number. Use the same encoding in the mortality rates cleaning file.
+
+rr_dataset_2019_long <- rr_dataset_2019_long %>%
+  mutate(cause_id = ifelse(cause == "Lower respiratory infections", 322, cause), 
+         cause_id = ifelse(cause == "Tracheal, bronchus, and lung cancer", 426,  cause_id), 
+         cause_id = ifelse(cause == "Ischaemic heart disease", 493, cause_id), 
+         cause_id = ifelse(cause == "Stroke", 494, cause_id), 
+         cause_id = ifelse(cause == "Chronic obstructive pulmonary disease", 509, cause_id), 
+         cause_id = ifelse(cause == "Diabetes mellitus type 2", 587, cause_id))
+
+#> reshaping the relative risks data back to wide, moving the pm level wise relative risks in the columns, so that the [cause, age_interval] combination can become a unique identifier. This way, we can easily merge the relative risks dataset with the mortality rates dataset.
+rr_dataset_2019_wide_final <- rr_dataset_2019_long %>%
+  pivot_wider(names_from = "pm_level", names_prefix = "relative_risk_pm", values_from = "relative_risk")
 
 #> writing the cleaned relative risks file to the data/intermediate folder 
-rr_dataset_2019_long %>%
+rr_dataset_2019_wide_final %>%
   write_csv("./data/intermediate/cleaned_relative_risks.csv")
 
 # next step is to merge this dataset with the cleaned mortality rates dataset, which will happen in the "calc_mortality_rates.Rmd" file
