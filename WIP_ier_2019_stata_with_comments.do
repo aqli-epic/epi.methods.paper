@@ -164,6 +164,8 @@ tempfile rr_dset_modified file1 file2 file3 allcause
 	replace cause = 426 if cause_name == "Tracheal, bronchus, and lung cancer"
 	replace cause = 409 if cause_name == "Non-communicable diseases"
 	replace cause = 587 if cause_name == "Diabetes mellitus type 2"
+	
+	* Where does "cause_lab" come from?
 	lab val cause cause_lab
 
 	* adjust value format for age_name, rename to agegroup

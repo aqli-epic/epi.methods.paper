@@ -82,8 +82,7 @@ mr_dataset_2019 <- mr_dataset_2019 %>%
   mutate(age_name_ll = ifelse(str_detect(age_name, "\\+") == TRUE, str_replace(age_name, "\\+", "") , str_extract(age_name, "(.)+(-)")), 
          age_name_ll = str_replace(age_name_ll, "(\\+)|(-)", ""),
          age_name_ul = ifelse(str_detect(age_name, "\\+") == TRUE, str_replace(age_name, "\\+", "") , str_extract(age_name, "(-)(.)+")), 
-         age_name_ul = str_replace(age_name_ul, "(\\+)|(-)", ""), 
-          age_name = str_replace(age_name, "(\\+)", ""))
+         age_name_ul = str_replace(age_name_ul, "(\\+)|(-)", ""))
 
 #> renaming columns so that we are consistent with the "relative risks" dataset column names. Ultimately th "relative risks" data will be merged with the "mortality rates" dataset. Consistent column names will make the merging code more intuitive. Also, dropping the "age_id" column which is standalone column in the mortality rates datset and does not have a counterpart in the relative risks dataset (so basically is of no use to us).
 
@@ -94,9 +93,60 @@ mr_dataset_2019 <- mr_dataset_2019 %>%
          age_interval = age_name) %>%
   select(-c(age_id))
 
-#> Writing the cleaned GBD mortality rates file to the data/intermediate folder
+#> encode the "cause" column for consistency, i.e. create a new column called "cause_id" that will map 
+#> each "cause_name" to a corresponding identifier number. Use the same encoding in the relative rates cleaning file.
+
+mr_dataset_2019 <- mr_dataset_2019 %>%
+  mutate(cause_id = ifelse(cause == "Lower respiratory infections", 322, cause), 
+         cause_id = ifelse(cause == "Tracheal, bronchus, and lung cancer", 426,  cause_id), 
+         cause_id = ifelse(cause == "Ischaemic heart disease", 493, cause_id), 
+         cause_id = ifelse(cause == "Stroke", 494, cause_id), 
+         cause_id = ifelse(cause == "Chronic obstructive pulmonary disease", 509, cause_id), 
+         cause_id = ifelse(cause == "Diabetes mellitus type 2", 587, cause_id), 
+         cause_id = ifelse(cause == "All causes", 294, cause_id))
+
+#> coerce certain numeric columns into class "numeric"
+mr_dataset_2019$mortality_rate <- as.numeric(mr_dataset_2019$mortality_rate)
+mr_dataset_2019$age_interval_ll <- as.numeric(mr_dataset_2019$age_interval_ll)
+mr_dataset_2019$age_interval_ul <- as.numeric(mr_dataset_2019$age_interval_ul)
+mr_dataset_2019$cause_id <- as.numeric(mr_dataset_2019$cause_id)
+
+#> Add an age_gap column, adjusting "0-1" and "95+" separately
+mr_dataset_2019 <- mr_dataset_2019 %>%
+  mutate(age_gap = (age_interval_ul - age_interval_ll) + 1, 
+         age_gap = ifelse(str_detect(age_interval, "0-1"), 1, age_gap), 
+         age_gap = ifelse(str_detect(age_interval, "95+"), NA, age_gap))
+
+#> Add an age_category column that maps age categories (starting from "0-1") to numbers. So, "0-1" will be mapped to 1, "1-4" will be mapped to 2, and so on.
+
+# create a age_category to number mapping dataset
+age_interval_cat_tibble <- tibble(age_interval = unique(mr_dataset_2019$age_interval))
+age_interval_cat_tibble <- age_interval_cat_tibble %>%
+  arrange(age_interval) %>%
+  mutate(age_interval_category = row_number())
+
+# add an "age_interval_category" column to mr_dataset_2019, by joining it with age_interval_cat_tibble, using "age_interval" as the joining column.
+mr_dataset_2019 <- mr_dataset_2019 %>%
+  left_join(age_interval_cat_tibble, by = "age_interval")
+
+
+#> make "cause" the first column and sort the mortality rates by cause, age_interval
+mr_dataset_2019 <- mr_dataset_2019 %>%
+  select(cause, everything()) %>%
+  arrange(cause, age_interval)
+
+#> separately save only the "All causes" rows in a separate dataset. This will be used later on in the Lifetable Method
+mr_dataset_2019_all_causes <- mr_dataset_2019 %>%
+  filter(cause == "All causes")
+
+#> Writing the cleaned GBD mortality rates (removing the "All causes" rows) file to the data/intermediate folder
 mr_dataset_2019 %>%
+  filter(cause %notin% c("All causes")) %>%
   write_csv("data/intermediate/cleaned_gbd_mortality_rates.csv")
+
+#> Write the cleaned "All cause" rows subset data to the Intermediate folder
+mr_dataset_2019_all_causes %>%
+  write_csv("data/intermediate/cleaned_gbd_mortality_rates_all_causes_only.csv")
 
 # next step is to merge this dataset with the cleaned relative risks dataset, which will happen in the "calc_mortality_rates.Rmd" file
 
