@@ -300,7 +300,7 @@ tempfile rr_dset_modified file1 file2 file3 allcause
 	* creating a new "rr_normalizer" column that would help us create the "adjusted mortality rates" column
 	di "Global population-weighted average PM2.5 level: `global_avg_PM'"
 
-	* Find avg pm level that is closest to the global pop-weighted avg
+	* Find avg pm level in the current dataset pm_level column, that is closest to the global pop-weighted avg. This whole rounding process is trying to figure out the closest pm value "from the list of unique pm values in the current dataset's pm_level" column that is closest to the global average PM value that is set up top. We do this, because the value set up top is not a whole number. This is why in the next step we create a new column "temp"  and in it we store the relative risks data "grouped by cause and age" for a world where pm_level =  global average. We then assign each cause, age group the mean value of the relative risk for that group.  
 	if `global_avg_PM' <= 30 {
 		local global_avg_PM = round(`global_avg_PM', 5)
 	}
