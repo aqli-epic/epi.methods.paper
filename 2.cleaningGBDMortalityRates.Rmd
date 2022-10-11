@@ -63,7 +63,7 @@ mr_dataset_2019_raw <- read_csv("./data/raw/ihme_gbd_2019_mortality_rates_by_cau
 
 # rename "cause_name" and "val" columns, arrange by (cause, age_id) and keep the following columns: age_id, age_name, cause_name, val.
 mr_dataset_2019 <- mr_dataset_2019_raw %>%
-    rename(cause = cause_name, 
+    dplyr::rename(cause = cause_name, 
          mortal_rate = val, 
          sex = sex_name) %>%
   select(age_id, age_name, cause, mortal_rate) %>%
@@ -87,7 +87,7 @@ mr_dataset_2019 <- mr_dataset_2019 %>%
 #> renaming columns so that we are consistent with the "relative risks" dataset column names. Ultimately th "relative risks" data will be merged with the "mortality rates" dataset. Consistent column names will make the merging code more intuitive. Also, dropping the "age_id" column which is standalone column in the mortality rates datset and does not have a counterpart in the relative risks dataset (so basically is of no use to us).
 
 mr_dataset_2019 <- mr_dataset_2019 %>%
-  rename(mortality_rate = mortal_rate, 
+  dplyr::rename(mortality_rate = mortal_rate, 
          age_interval_ll = age_name_ll,
          age_interval_ul = age_name_ul, 
          age_interval = age_name) %>%
@@ -99,7 +99,7 @@ mr_dataset_2019 <- mr_dataset_2019 %>%
 mr_dataset_2019 <- mr_dataset_2019 %>%
   mutate(cause_id = ifelse(cause == "Lower respiratory infections", 322, cause), 
          cause_id = ifelse(cause == "Tracheal, bronchus, and lung cancer", 426,  cause_id), 
-         cause_id = ifelse(cause == "Ischaemic heart disease", 493, cause_id), 
+         cause_id = ifelse(cause == "Ischemic heart disease", 493, cause_id), 
          cause_id = ifelse(cause == "Stroke", 494, cause_id), 
          cause_id = ifelse(cause == "Chronic obstructive pulmonary disease", 509, cause_id), 
          cause_id = ifelse(cause == "Diabetes mellitus type 2", 587, cause_id), 
@@ -122,8 +122,8 @@ mr_dataset_2019 <- mr_dataset_2019 %>%
 # create a age_category to number mapping dataset
 age_interval_cat_tibble <- tibble(age_interval = unique(mr_dataset_2019$age_interval))
 age_interval_cat_tibble <- age_interval_cat_tibble %>%
-  arrange(age_interval) %>%
-  mutate(age_interval_category = row_number())
+  dplyr::arrange(age_interval) %>%
+  dplyr::mutate(age_interval_category = row_number())
 
 # add an "age_interval_category" column to mr_dataset_2019, by joining it with age_interval_cat_tibble, using "age_interval" as the joining column.
 mr_dataset_2019 <- mr_dataset_2019 %>%

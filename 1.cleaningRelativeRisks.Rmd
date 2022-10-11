@@ -127,7 +127,7 @@ rr_dataset_2019_long <- rr_dataset_2019_long %>%
 rr_dataset_2019_long <- rr_dataset_2019_long %>%
   mutate(cause_id = ifelse(cause == "Lower respiratory infections", 322, cause), 
          cause_id = ifelse(cause == "Tracheal, bronchus, and lung cancer", 426,  cause_id), 
-         cause_id = ifelse(cause == "Ischaemic heart disease", 493, cause_id), 
+         cause_id = ifelse(cause == "Ischemic heart disease", 493, cause_id), 
          cause_id = ifelse(cause == "Stroke", 494, cause_id), 
          cause_id = ifelse(cause == "Chronic obstructive pulmonary disease", 509, cause_id), 
          cause_id = ifelse(cause == "Diabetes mellitus type 2", 587, cause_id))

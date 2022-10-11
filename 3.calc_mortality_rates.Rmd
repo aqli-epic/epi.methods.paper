@@ -1,0 +1,82 @@
+---
+title: "Calculate Mortality Rates"
+author: "Aarsh"
+date: '2022-10-06'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Global parameters and libraries
+```{r lib_glob_parameters}
+
+# libraries
+library(readr)
+library(dplyr)
+library(stringr)
+library(magrittr)
+library(ggplot2)
+library(readr)
+library(tidytext)
+library(tidyr)
+library(tidyverse)
+library(sf)
+library(usethis)
+library(devtools)
+library(readxl)
+library(plyr)
+
+# load and document (for automatic rendering of the roxygen comments into a man file) to keep things updated
+devtools::load_all()
+devtools::document()
+
+# custom operators
+`%notin%` <- Negate(`%in%`)
+
+# global parameters 
+gbd_year <- 2019
+
+```
+
+
+## Merge Relative Risks and Mortality Rates
+
+```{r mergeRelativeRisksAndMortalityRates}
+
+#> Read in the cleaned GBD mortality rates file (note that this does not contain the "All causes" data, that is separately downloaded below)
+cleaned_gbd_mortality_rates <- read_csv("./data/intermediate/cleaned_gbd_mortality_rates.csv")
+
+#> Read in the cleaned relative risks file
+cleaned_relative_risks <- read_csv("./data/intermediate/cleaned_relative_risks.csv")
+
+#> Read in "All causes" cleaned GBD mortality rates data
+cleaned_gbd_mortality_rates_all_causes_only <- read_csv("./data/intermediate/cleaned_gbd_mortality_rates_all_causes_only.csv")
+
+#> join the cleaned mortality and relative risks datasets
+cleaned_joined_mort_rr_data <- cleaned_gbd_mortality_rates %>%
+  left_join(cleaned_relative_risks, by = c("cause", "age_interval"))
+
+#> dropping redundant columns and renaming certain columns after dropping the redundancies, then reordering the columns. Note that, it is possible that some of the function names for dplyr and plyr might clash. So, use the package prefix, before the function name. For example, to rename a column, use: dplyr::rename(), instead of just rename()
+cleaned_joined_mort_rr_data <- cleaned_joined_mort_rr_data %>%
+ dplyr::select(-c(age_interval_ll.y, age_interval_ul.y, cause_id.y)) %>%
+  dplyr::rename(age_interval_ll = age_interval_ll.x, 
+         age_interval_ul = age_interval_ul.x, 
+         cause_id = cause_id.x) %>%
+  dplyr::arrange(cause, age_interval)
+
+#> converting the above dataset back into long format, such that "pm_level" and "relative risk" are columns in the new dataset and sort the dataset by cause, pm_level, age_interval
+cleaned_joined_mort_rr_data_long <- cleaned_joined_mort_rr_data %>%
+  pivot_longer(cols = relative_risk_pm0:relative_risk_pm90, names_to = c("pm_level"), names_pattern = "(\\d+)", values_to = "relative_risk") %>%
+  arrange(cause, pm_level, age_interval)
+
+#> For all age groups less than 25 years of age, relative risks information is not availbale. For these, assume that relative risks = 1. Also replace any missing relative risks information with 1. Below code, replaces all those rows in the "relative_risk" column, where age_interval_ul < 25, with 1. Also, if relative risks data is missing, fill it in with relative risks = 1. 
+
+cleaned_joined_mort_rr_data_long <- cleaned_joined_mort_rr_data_long %>%
+  mutate(relative_risk = ifelse(age_interval_ul < 25, 1, relative_risk), 
+         relative_risk = ifelse(is.na(relative_risk) == TRUE, 1, relative_risk))
+
+
+```
+

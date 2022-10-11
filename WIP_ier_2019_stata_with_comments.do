@@ -542,30 +542,19 @@ tempfile actual_table
 	outsheet using `"`ier_lx_csv'"', comma replace
 
 
-	
-	
-
-
-
-
-
-
 
 	
 	
 
 
+
+
+
+
+
 	
 	
+
+
 	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+
