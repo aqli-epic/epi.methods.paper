@@ -26,7 +26,7 @@ library(sf)
 library(usethis)
 library(devtools)
 library(readxl)
-library(plyr)
+
 
 # load and document (for automatic rendering of the roxygen comments into a man file) to keep things updated
 devtools::load_all()
@@ -76,6 +76,8 @@ cleaned_joined_mort_rr_data_long <- cleaned_joined_mort_rr_data %>%
 cleaned_joined_mort_rr_data_long <- cleaned_joined_mort_rr_data_long %>%
   mutate(relative_risk = ifelse(age_interval_ul < 25, 1, relative_risk), 
          relative_risk = ifelse(is.na(relative_risk) == TRUE, 1, relative_risk))
+
+
 
 
 ```
