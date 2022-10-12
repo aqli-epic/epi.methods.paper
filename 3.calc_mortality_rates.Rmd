@@ -72,7 +72,7 @@ cleaned_joined_mort_rr_data <- cleaned_joined_mort_rr_data %>%
 #> converting the above dataset back into long format, such that "pm_level" and "relative risk" are columns in the new dataset and sort the dataset by cause, pm_level, age_interval
 cleaned_joined_mort_rr_data_long <- cleaned_joined_mort_rr_data %>%
   pivot_longer(cols = relative_risk_pm0:relative_risk_pm90, names_to = c("pm_level"), names_pattern = "(\\d+)", values_to = "relative_risk") %>%
-  arrange(cause, pm_level, age_interval)
+  arrange(cause, age_interval, pm_level)
 
 #> For all age groups less than 25 years of age, relative risks information is not availbale. For these, assume that relative risks = 1. Also replace any missing relative risks information with 1. Below code, replaces all those rows in the "relative_risk" column, where age_interval_ul < 25, with 1. Also, if relative risks data is missing, fill it in with relative risks = 1. 
 
@@ -104,5 +104,84 @@ if(length(potential_pm2.5_buckets_indices) < 2){
 }
 
 #> create a new temp columm that will be used to create yet another "rr_normalizer" column which will be used to create yet another "adjusted_mortality_rates" column. After generating the "rr_normalizer" column, the "temp" column will be dropped as it would have served its purpose by then. The "temp" column in the step below takes in the relative risk number of those rows where pm_level = "global_avg_pm2.5_rounded" number. In other words, it takes on those relative risk numbers that correspond to the current global average pm2.5 concentration level.  
+
+# create a new "temp" column
+cleaned_joined_mort_rr_data_long <- cleaned_joined_mort_rr_data_long %>%
+  mutate(temp = ifelse(pm_level == global_avg_pm2.5_rounded, relative_risk, NA))
+
+# group by cause, and age_interval and each row of each of these groups, gets the relative risk number that is equal to mean of "temp" column for that group. Capture this new information in a new column called "rr_normalizer".
+cleaned_joined_mort_rr_data_long <- cleaned_joined_mort_rr_data_long %>%
+  group_by(cause, age_interval) %>%
+  mutate(rr_normalizer = mean(temp, na.rm = TRUE)) %>%
+  ungroup()
+
+# drop the temp column
+cleaned_joined_mort_rr_data_long <- cleaned_joined_mort_rr_data_long %>%
+  select(-temp)
+
+# add a new column called "adjusted mortality rate", which adjusts the mortality rate for a given age_cat, cause group, by their RR in relation to the RR at the rounded Global Average PM2.5. Here the assumption is that in the absence of the risk factor, age specific death rates would be proportionally lower. This dataset corresponds to the "file1" dataset in the STATA script. This is what "PM2.5 specific mortality rates" would be if PM2.5 = X. This helps us calcuate mortality rates for any given counterfactual PM2.5 value "X".
+
+cleaned_joined_mort_rr_data_long <- cleaned_joined_mort_rr_data_long %>%
+  mutate(adjusted_mortality_rate = (mortality_rate * relative_risk)/rr_normalizer)
+
+#>---------------------------------------------------------------------------------------------->#
+
+
+
+#>---------------- Prep "all cause" mortality rates (loaded as a separate file up top) for "actual life table computation", adjusted to reflect higher (or lower) mortality rates at PM2.5 concentrations that are higher (or lower) than the global average.------------------------------------------------->#
+
+# create a m_diff column, that takes the difference between "actual" and "adjusted" mortality rates
+cleaned_joined_mort_rr_data_long <- cleaned_joined_mort_rr_data_long %>%
+  mutate(m_diff = adjusted_mortality_rate - mortality_rate)
+
+# * (New Assumption): summarise "cleaned_joined_mort_rr_data_long" dataset by summing up "m_diff", grouped by age_cat, pm_level and then sort by "pm_level" and "age_cat". Note that this m_diff_sum (which is calculated using the adjusted mortality rates concerning the 6 causes of deaths) will be used to adjust all cause mortality rates later on in the process. It should be noted that the "m_diff_sum" that we will add to the "all cause mortality" later on in the process, is an adjustment based on the 6 disease channels in question.
+
+cleaned_joined_mort_rr_data_long_summary <- cleaned_joined_mort_rr_data_long %>%
+  group_by(age_interval, pm_level) %>%
+  summarise(m_diff_sum = sum(m_diff, na.rm = TRUE)) %>%
+  ungroup() %>%
+  arrange(pm_level, age_interval) 
+  
+# (* New Assumption) merging the summary dataset generated in the above step with "cleaned_gbd_mortality_rates_all_causes" dataset, using "age_interval" as the linking key. Then rename the "mortality_rate" column to "actual_mr". Note that the "all_causes" dataset does not have a "pm_level" column. So, each age_category in the joined dataset, has an associated set of 21 pm_levels, but for all of those the mortality_rate remains the same (that is an assumption that we make). We then adjust these mortality rates, by adding in the "m_diff_sum" column to the "actual_mr" column (which is the new name of the "mortality_rate" column), the output of which is assigned to the column named "nMx".
+
+cleaned_joined_mort_rr_data_long_summary <- cleaned_joined_mort_rr_data_long_summary %>%
+  left_join(cleaned_gbd_mortality_rates_all_causes_only, by = "age_interval") %>%
+  arrange(age_interval, pm_level) %>%
+  rename(actual_mr = mortality_rate)
+
+# add a new nMx column, which is created by adding the "m_diff_sum" adjustment to the all cause mortality rates. But, note that "m_diff_sum" was calculated from only 6 PM2.5 specific disease channels. This is what "all cause mortality" rates would be if PM2.5 = X (where "X" is a counterfactual concentration)
+cleaned_joined_mort_rr_data_long_summary <- cleaned_joined_mort_rr_data_long_summary %>%
+  mutate(nMx = actual_mr + m_diff_sum)
+
+# replace nMx with nMx/100000 (this column represents the "Mortality rate (deaths per person-year), adjusted"): This dataset corresponds to the "file2" dataset in Ken's STATA script. nMx is the mortality incidence rate for age interval between ages x and x + n, expressed in the units of deaths per person-year
+cleaned_joined_mort_rr_data_long_summary <- cleaned_joined_mort_rr_data_long_summary %>%
+  mutate(nMx = nMx/100000)
+
+
+
+#>----------------------------------------------------------------------------------------------------------->#
+
+
+#> Prepare age-specific mortalities attributed to PM2.5 (for cause-deleted)------------------------------------------>#
+
+# Note that "cleaned_joined_mort_rr_data_long" corresponds to the "file1" tempfile in the STATA scripts. Adding 2 new columns called paf (Population Attributable Fraction) and pm_mortal_rate
+cleaned_joined_mort_rr_data_long <- cleaned_joined_mort_rr_data_long %>%
+  mutate(paf = 1 - (1/relative_risk), 
+         pm_mortality_rate = paf * adjusted_mortality_rate)
+
+# summary for cause-deleted life table (cdlt): This is the sum of total number of deaths across all 6 causes of death (corresponds to collapse statement that we see in part "f" of the STATA script).
+cleaned_joined_mort_rr_data_long_summary_cdlt <- cleaned_joined_mort_rr_data_long %>%
+  group_by(age_interval, age_interval_ll, age_interval_ul, age_gap, pm_level) %>%
+  summarise(pm_mortality_rate = sum(pm_mortality_rate, na.rm = TRUE)) %>%
+  ungroup()
+
+# rename pm_mortality_rate to pm_nMx and then converting pm_nMx into a rate by dividing by 100000. The resulting dataset corresponds to "file 3" in the STATA script
+cleaned_joined_mort_rr_data_long_summary_cdlt <- cleaned_joined_mort_rr_data_long_summary_cdlt %>%
+  rename(pm_nMx = pm_mortality_rate) %>%
+  mutate(pm_nMx = pm_nMx/100000)
+
+
+#>--------------------------------------------------------------------------------------------------------------------------->#
+
 ```
 
