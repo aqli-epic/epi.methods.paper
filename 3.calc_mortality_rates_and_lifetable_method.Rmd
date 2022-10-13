@@ -208,8 +208,10 @@ cleaned_joined_mort_rr_data_long_summary <- cleaned_joined_mort_rr_data_long_sum
 # lx is the survivor function. It considers the surviving population of a hypothetical birth cohort of 100000 individuals at age x. See equation 2 in Apte et al, 2018 (supplemental information doc). In other words, population of the lifetable cohort that is still alive at the beginning of age interval x depends on the number of individuals that are alive at the outset of the previous age interval x-l, and the fraction of members who survived that preceding age interval, (1 - nq(x-1)). For the first age interval (0-1), lx = 100000, because the everyone is alive at the beginning of the first age interval. For every interval, after the first one, we use the formula in equation 3 of the apte paper to calculate lx.
 
 cleaned_joined_mort_rr_data_long_summary <- cleaned_joined_mort_rr_data_long_summary %>%
-  mutate(lx = 100000, 
-         lx = ifelse(age_interval == "0-1", 100000, a))
+  mutate(lx = 100000) %>%
+  group_by(pm_level) %>%
+  mutate(temp_grp_wise_row_number = dplyr::row_number()) %>%  # adding this column so that we can avoid writing a loop to calculate lx in the next mutate statement
+  mutate(lx = ifelse(age_interval != "0-1", (lx[temp_grp_wise_row_number -1] * (1 - nqx[temp_grp_wise_row_number - 1])), 100000))
 
 
 
