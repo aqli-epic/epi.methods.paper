@@ -209,7 +209,7 @@ cleaned_joined_mort_rr_data_long_summary <- cleaned_joined_mort_rr_data_long_sum
 
 cleaned_joined_mort_rr_data_long_summary <- cleaned_joined_mort_rr_data_long_summary %>%
   mutate(lx = 100000, 
-         lx = ifelse(age_interval == "0-1", 100000, ))
+         lx = ifelse(age_interval == "0-1", 100000, a))
 
 
 
