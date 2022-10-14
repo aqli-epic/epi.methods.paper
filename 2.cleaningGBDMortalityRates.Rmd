@@ -120,20 +120,20 @@ mr_dataset_2019 <- mr_dataset_2019 %>%
 #> Add an age_category column that maps age categories (starting from "0-1") to numbers. So, "0-1" will be mapped to 1, "1-4" will be mapped to 2, and so on.
 
 # create a age_category to number mapping dataset
-age_interval_cat_tibble <- tibble(age_interval = unique(mr_dataset_2019$age_interval))
+age_interval_cat_tibble <- tibble(age_interval_ll = unique(mr_dataset_2019$age_interval_ll))
 age_interval_cat_tibble <- age_interval_cat_tibble %>%
-  dplyr::arrange(age_interval) %>%
+  dplyr::arrange(age_interval_ll) %>%
   dplyr::mutate(age_interval_category = row_number())
 
 # add an "age_interval_category" column to mr_dataset_2019, by joining it with age_interval_cat_tibble, using "age_interval" as the joining column.
 mr_dataset_2019 <- mr_dataset_2019 %>%
-  left_join(age_interval_cat_tibble, by = "age_interval")
+  left_join(age_interval_cat_tibble, by = "age_interval_ll")
 
 
 #> make "cause" the first column and sort the mortality rates by cause, age_interval
 mr_dataset_2019 <- mr_dataset_2019 %>%
   select(cause, everything()) %>%
-  arrange(cause, age_interval)
+  arrange(cause, age_interval_ll)
 
 #> separately save only the "All causes" rows in a separate dataset. This will be used later on in the Lifetable Method
 mr_dataset_2019_all_causes <- mr_dataset_2019 %>%

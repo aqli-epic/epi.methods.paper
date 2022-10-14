@@ -59,20 +59,19 @@ cleaned_gbd_mortality_rates_all_causes_only <- read_csv("./data/intermediate/cle
 
 #> join the cleaned mortality and relative risks datasets
 cleaned_joined_mort_rr_data <- cleaned_gbd_mortality_rates %>%
-  left_join(cleaned_relative_risks, by = c("cause", "age_interval"))
+  left_join(cleaned_relative_risks, by = c("cause", "age_interval", "age_interval_ll"))
 
 #> dropping redundant columns and renaming certain columns after dropping the redundancies, then reordering the columns. Note that, it is possible that some of the function names for dplyr and plyr might clash. So, use the package prefix, before the function name. For example, to rename a column, use: dplyr::rename(), instead of just rename()
 cleaned_joined_mort_rr_data <- cleaned_joined_mort_rr_data %>%
- dplyr::select(-c(age_interval_ll.y, age_interval_ul.y, cause_id.y)) %>%
-  dplyr::rename(age_interval_ll = age_interval_ll.x, 
-         age_interval_ul = age_interval_ul.x, 
+ dplyr::select(-c(age_interval_ul.y, cause_id.y)) %>%
+  dplyr::rename(age_interval_ul = age_interval_ul.x, 
          cause_id = cause_id.x) %>%
-  dplyr::arrange(cause, age_interval)
+  dplyr::arrange(cause, age_interval_ll)
 
 #> converting the above dataset back into long format, such that "pm_level" and "relative risk" are columns in the new dataset and sort the dataset by cause, pm_level, age_interval
 cleaned_joined_mort_rr_data_long <- cleaned_joined_mort_rr_data %>%
   pivot_longer(cols = relative_risk_pm0:relative_risk_pm90, names_to = c("pm_level"), names_pattern = "(\\d+)", values_to = "relative_risk") %>%
-  arrange(cause, age_interval, pm_level)
+  arrange(cause, age_interval_ll, pm_level)
 
 #> For all age groups less than 25 years of age, relative risks information is not availbale. For these, assume that relative risks = 1. Also replace any missing relative risks information with 1. Below code, replaces all those rows in the "relative_risk" column, where age_interval_ul < 25, with 1. Also, if relative risks data is missing, fill it in with relative risks = 1. 
 
@@ -111,7 +110,7 @@ cleaned_joined_mort_rr_data_long <- cleaned_joined_mort_rr_data_long %>%
 
 # group by cause, and age_interval and each row of each of these groups, gets the relative risk number that is equal to mean of "temp" column for that group. Capture this new information in a new column called "rr_normalizer".
 cleaned_joined_mort_rr_data_long <- cleaned_joined_mort_rr_data_long %>%
-  group_by(cause, age_interval) %>%
+  group_by(cause, age_interval_ll) %>%
   mutate(rr_normalizer = mean(temp, na.rm = TRUE)) %>%
   ungroup()
 
@@ -137,16 +136,16 @@ cleaned_joined_mort_rr_data_long <- cleaned_joined_mort_rr_data_long %>%
 # * (New Assumption): summarise "cleaned_joined_mort_rr_data_long" dataset by summing up "m_diff", grouped by age_cat, pm_level and then sort by "pm_level" and "age_cat". Note that this m_diff_sum (which is calculated using the adjusted mortality rates concerning the 6 causes of deaths) will be used to adjust all cause mortality rates later on in the process. It should be noted that the "m_diff_sum" that we will add to the "all cause mortality" later on in the process, is an adjustment based on the 6 disease channels in question.
 
 cleaned_joined_mort_rr_data_long_summary <- cleaned_joined_mort_rr_data_long %>%
-  group_by(age_interval, pm_level) %>%
+  group_by(age_interval_ll, pm_level) %>%
   summarise(m_diff_sum = sum(m_diff, na.rm = TRUE)) %>%
   ungroup() %>%
-  arrange(pm_level, age_interval) 
+  arrange(pm_level, age_interval_ll) 
   
 # (* New Assumption) merging the summary dataset generated in the above step with "cleaned_gbd_mortality_rates_all_causes" dataset, using "age_interval" as the linking key. Then rename the "mortality_rate" column to "actual_mr". Note that the "all_causes" dataset does not have a "pm_level" column. So, each age_category in the joined dataset, has an associated set of 21 pm_levels, but for all of those the mortality_rate remains the same (that is an assumption that we make). We then adjust these mortality rates, by adding in the "m_diff_sum" column to the "actual_mr" column (which is the new name of the "mortality_rate" column), the output of which is assigned to the column named "nMx".
 
 cleaned_joined_mort_rr_data_long_summary <- cleaned_joined_mort_rr_data_long_summary %>%
-  left_join(cleaned_gbd_mortality_rates_all_causes_only, by = "age_interval") %>%
-  arrange(age_interval, pm_level) %>%
+  left_join(cleaned_gbd_mortality_rates_all_causes_only, by = "age_interval_ll") %>%
+  arrange(age_interval_ll, pm_level) %>%
   rename(actual_mr = mortality_rate)
 
 # add a new nMx column, which is created by adding the "m_diff_sum" adjustment to the all cause mortality rates. But, note that "m_diff_sum" was calculated from only 6 PM2.5 specific disease channels. This is what "all cause mortality" rates would be if PM2.5 = X (where "X" is a counterfactual concentration)
@@ -183,7 +182,8 @@ cleaned_joined_mort_rr_data_long_summary_cdlt <- cleaned_joined_mort_rr_data_lon
 
 #>--------------------------------------------------------------------------------------------------------------------------->#
 
-#> Calcualte "Actual" Global Life Table, for various PM2.5 levels (corresponding to start of Part-2 in the STATA script)
+
+#> Calcualte "Actual" Global Life Table, for various PM2.5 levels (corresponding to start of Part-2 in the STATA script)--------------->#
 
 # Use "adjusted" all cause mortality rates, to compute actual life expectancy at birth in a world where PM2.5 = x (following a combination of Apte's 2018 paper supplemental information doc and Arias 2013 paper, which follow same terminology).
 
@@ -201,9 +201,9 @@ mutate(nqx = (nmx*age_gap)/(1 + ((1 - alpha_x)*(nmx)*(age_gap))))
 # (* Assumption): set nqx = 1, if age_cat = max(age_cat), which as of now is "95+" and sorting by pm_level and age_interval
 cleaned_joined_mort_rr_data_long_summary <- cleaned_joined_mort_rr_data_long_summary %>%
   mutate(nqx = ifelse(age_interval == "95+", 1, nqx)) %>%
-  arrange(pm_level, age_interval)
+  arrange(pm_level, age_interval_ll)
 
-#> compute lx (Population of cohort still alive at the beginning of the age interval). 
+#> Compute lx (Population of cohort still alive at the beginning of the age interval). 
 
 # lx is the survivor function. It considers the surviving population of a hypothetical birth cohort of 100000 individuals at age x. See equation 2 in Apte et al, 2018 (supplemental information doc). In other words, population of the lifetable cohort that is still alive at the beginning of age interval x depends on the number of individuals that are alive at the outset of the previous age interval x-l, and the fraction of members who survived that preceding age interval, (1 - nq(x-1)). For the first age interval (0-1), lx = 100000, because the everyone is alive at the beginning of the first age interval. For every interval, after the first one, we use the formula in equation 3 of the apte paper to calculate lx.
 
@@ -211,7 +211,25 @@ cleaned_joined_mort_rr_data_long_summary <- cleaned_joined_mort_rr_data_long_sum
   mutate(lx = 100000) %>%
   group_by(pm_level) %>%
   mutate(temp_grp_wise_row_number = dplyr::row_number()) %>%  # adding this column so that we can avoid writing a loop to calculate lx in the next mutate statement
-  mutate(lx = ifelse(age_interval != "0-1", (lx[temp_grp_wise_row_number -1] * (1 - nqx[temp_grp_wise_row_number - 1])), 100000))
+  mutate(lx = ifelse(age_interval != "0-1", (lx[temp_grp_wise_row_number -1] * (1 - nqx[temp_grp_wise_row_number - 1])), 100000)) %>%
+  ungroup()
+
+#> Compute ndx i.e. the life table cohort deaths in the given  age interval and nlx, i.e. life years lived by the cohort in the given age interval
+cleaned_joined_mort_rr_data_long_summary <- cleaned_joined_mort_rr_data_long_summary %>%
+  mutate(ndx = lx * nqx,
+         nlx = ndx/nmx)
+
+#> Compute nfx (which is a preparation for calculating the global "cause deleted" life table, that will be calculated after we are done with the "actual life table" calculation.
+cleaned_joined_mort_rr_data_long_summary <- cleaned_joined_mort_rr_data_long_summary %>%
+  arrange(pm_level, age_interval_ll) %>%
+  mutate(nfx = 0) %>%
+  group_by(pm_level) %>%
+  mutate(nfx = (((age_gap[temp_grp_wise_row_number])*(lx[temp_grp_wise_row_number])) - nlx[temp_grp_wise_row_number])/(lx[temp_grp_wise_row_number] - lx[temp_grp_wise_row_number + 1]))
+
+
+
+
+
 
 
 

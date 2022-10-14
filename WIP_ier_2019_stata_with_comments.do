@@ -411,6 +411,7 @@ tempfile actual_table
 	* compute nqx
 	* nqx = ndx/lx (Equation [3], Arias et al.). ndx is the number of life table deaths due to cause. lx is the number of survivors to age x.	
 	gen nqx = (nMx * age_gap) / (1 + (nMx * age_gap * (1 - alpha_x)))
+	di `max_age_cat'
 	replace nqx = 1 if age_cat == `max_age_cat'
 	lab var nqx "Probability of death during the age interval (x, x+n)"
 
@@ -419,7 +420,7 @@ tempfile actual_table
 	gen lx = 100000
 	lab var lx "Population of cohort still alive at the beginning of age interval"
 	forval i = 2/`max_age_cat' {
-	by pm_level: replace lx = lx[_n - 1] * (1 - nqx[_n - 1]) if age_cat == `i'
+	by pm_level: replace  lx = lx[_n - 1] * (1 - nqx[_n - 1]) if age_cat == `i'
 	}
 	
 	* compute ndx
