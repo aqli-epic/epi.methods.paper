@@ -265,6 +265,10 @@ for(i in 1:num_unique_pm_levels){
 
 }
 
+# Compute ex and then roud it to the nearest 1/1000000 
+cleaned_joined_mort_rr_data_long_summary <- cleaned_joined_mort_rr_data_long_summary %>%
+  mutate(ex = ntx/lx, 
+         ex = plyr::round_any(ex, 0.000001))
 
 
 
