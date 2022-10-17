@@ -127,7 +127,7 @@ cleaned_joined_mort_rr_data_long <- cleaned_joined_mort_rr_data_long %>%
 
 
 
-#>---------------- Prep "all cause" mortality rates (loaded as a separate file up top) for "actual life table computation", adjusted to reflect higher (or lower) mortality rates at PM2.5 concentrations that are higher (or lower) than the global average.------------------------------------------------->#
+#>-----------------------Prep "all cause" mortality rates (loaded as a separate file up top) for "actual life table computation", adjusted to reflect higher (or lower) mortality rates at PM2.5 concentrations that are higher (or lower) than the global average.------------------------------------------------------------>#
 
 # create a m_diff column, that takes the difference between "actual" and "adjusted" mortality rates
 cleaned_joined_mort_rr_data_long <- cleaned_joined_mort_rr_data_long %>%
@@ -174,7 +174,7 @@ cleaned_joined_mort_rr_data_long_summary_cdlt <- cleaned_joined_mort_rr_data_lon
   summarise(pm_mortality_rate = sum(pm_mortality_rate, na.rm = TRUE)) %>%
   ungroup()
 
-# rename pm_mortality_rate to pm_nmx and then converting pm_nmx into a rate by dividing by 100000. The resulting dataset corresponds to "file 3" in the STATA script
+# rename pm_mortality_rate to pm_nmx and then converting pm_nmx into a rate by dividing by 100000. The resulting dataset corresponds to "file-3" in the STATA script
 cleaned_joined_mort_rr_data_long_summary_cdlt <- cleaned_joined_mort_rr_data_long_summary_cdlt %>%
   rename(pm_nmx = pm_mortality_rate) %>%
   mutate(pm_nmx = pm_nmx/100000)
@@ -271,7 +271,7 @@ cleaned_joined_mort_rr_data_long_summary <- cleaned_joined_mort_rr_data_long_sum
          ex = plyr::round_any(ex, 0.000001))
 
 
-#> Compute life expectancy at birth (as of now this is my best guess of what's happening in the corresponding STATA code, lines 456 to 461)
+#> Compute life expectancy at birth 
 actual_life_ex_birth <- cleaned_joined_mort_rr_data_long_summary %>%
   filter(age_interval_ll == 0, pm_level == global_avg_pm2.5_rounded) %>%
   summarise(avg_life_exp_at_birth = mean(ex))
@@ -283,10 +283,35 @@ actual_life_table <- cleaned_joined_mort_rr_data_long_summary
 #>------------------------------------------------------------------------------------------------------->#
 
 
-#> Calculate "cause deleted" global life table, for various causes
+#> ------------------Calculate "cause deleted" global life table, for various causes------------------------------------------->#
 
 
+#>  We start of with the "cleaned_joined_mort_rr_data_long_summary_cdlt" data that we created above (one that corresponds to file-3 tempfile in the corresponding STATA script).
 
+cleaned_joined_mort_rr_data_long_summary_cdlt
+
+# Step 1: Follow Apte et al and Arias et al procedure to derive the counterfactual probability of death
+
+#> For this cause-deleted part of the script, we calculate similar variable as we did for the "actual_life_table" (which was generated using "all causes" data, which to be clear oes not mean sum of 6 disease channels, but rather the actual "all causes" category of data that we download from the GBD) part of the script, but assuming that the death by pm2.5 (occuring via the sum of the 6 disease channels) is eliminated. Given that assumption we calculate a new life table, which we name as the "cause eliminated" life table (because we have eliminated PM2.5 as a cause of death, by summing up the 6 causes mortality data, converted it into life expectancy numbers and then subtracted it from the actual life table). Given this, how does the life expectancy at different age intervals changes and how does that compare to the actual life table? This is the question that we finally answer by taking a difference between the actual table and the cause-eliminated table. 
+
+
+#> The following computation is based on Apte et al, 2018 and Arias et al 2013 papers. The terminology is a mix of both so, refer both papers. Although Arias paper explains the underlying concepts in a much more clear fashion.
+
+# Add a alpha_x column to the "cleaned_joined_mort_rr_data_long_summary_cdlt" dataset
+cleaned_joined_mort_rr_data_long_summary_cdlt <- cleaned_joined_mort_rr_data_long_summary_cdlt %>%
+  mutate(alpha_x = 0.5)
+
+# create a new "nqx_attrib" column (See Apte's paper supplemental information section): This is the age specific death rate, attributable to PM2.5
+cleaned_joined_mort_rr_data_long_summary_cdlt <- cleaned_joined_mort_rr_data_long_summary_cdlt %>%
+  mutate(nqx_attrib = (pm_nmx * age_gap)/(1 + ((1 - alpha_x)*(pm_nmx)*(age_gap))))
+
+# Join the above table with the "actual table" calculated in the section above.
+cleaned_joined_mort_rr_data_long_summary_cdlt <- cleaned_joined_mort_rr_data_long_summary_cdlt %>%
+  left_join(actual_life_table, by = c("age_interval", "age_interval_ll", "age_interval_ul", "age_gap", "alpha_x", "pm_level"))
+
+#  Compute nqx_deleted using nrx and nqx. nrx = nqx_attrib/nqx in Apte et al (2018) supplemental information section. This is equivalent to pm_nmx/nmx in Arias et al (Equation 6)
+
+cleaned_joined_mort_rr_data_long_summary_cdlt
 
 ```
 
