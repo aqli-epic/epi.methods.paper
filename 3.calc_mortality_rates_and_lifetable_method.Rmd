@@ -265,16 +265,19 @@ for(i in 1:num_unique_pm_levels){
 
 }
 
-# Compute ex and then roud it to the nearest 1/1000000 
+#> Compute ex and then roud it to the nearest 1/1000000 
 cleaned_joined_mort_rr_data_long_summary <- cleaned_joined_mort_rr_data_long_summary %>%
   mutate(ex = ntx/lx, 
          ex = plyr::round_any(ex, 0.000001))
 
 
+#> Compute life expectancy at birth (as of now this is my best guess of what's happening in the corresponding STATA code, lines 456 to 461)
+actual_life_ex_birth <- cleaned_joined_mort_rr_data_long_summary %>%
+  filter(age_interval_ll == 0, pm_level == global_avg_pm2.5_rounded) %>%
+  summarise(avg_life_exp_at_birth = mean(ex))
 
-
-
-
+#> At this stage create a copy of the cleaned_joined_mort_rr_data_long_summary and name it the "actual_table"
+actual_life_table <- cleaned_joined_mort_rr_data_long_summary
 
 ```
 
