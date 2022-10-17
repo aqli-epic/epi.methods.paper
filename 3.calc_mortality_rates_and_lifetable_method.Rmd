@@ -279,5 +279,14 @@ actual_life_ex_birth <- cleaned_joined_mort_rr_data_long_summary %>%
 #> At this stage create a copy of the cleaned_joined_mort_rr_data_long_summary and name it the "actual_table"
 actual_life_table <- cleaned_joined_mort_rr_data_long_summary
 
+
+#>------------------------------------------------------------------------------------------------------->#
+
+
+#> Calculate "cause deleted" global life table, for various causes
+
+
+
+
 ```
 
