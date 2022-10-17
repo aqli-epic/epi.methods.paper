@@ -442,10 +442,11 @@ tempfile actual_table
 	
 	* compute nTx
 	gen nTx = nLx if age_cat ==`max_age_cat'
-	local penultimate = `max_age_cat' - 1
+	local penultimate = `max_age_cat' - 1 
 	sort pm_level age_cat
 	forval i=1/`penultimate' {
 		by pm_level: replace nTx = nLx[_n] + nTx[_n+1] if age_cat ==`max_age_cat'-`i'
+		di nTx[_n + 1]
 	}
 	
 	* compute e_x
