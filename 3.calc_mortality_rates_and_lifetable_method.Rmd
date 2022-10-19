@@ -373,6 +373,19 @@ cleaned_joined_mort_rr_data_long_summary_cdlt <- cleaned_joined_mort_rr_data_lon
   mutate(counterfactual_life_exp = tx_del/lx_del,
          counterfactual_life_exp = plyr::round_any(counterfactual_life_exp, 0.000001))
 
-#> 
+#> create final dataset (which is a subset of "cleaned_joined_mort_rr_data_long_summary_cdlt") for plotting and generate a "life_years_lost" column, which represents life years lost due to PM2.5 risk. Also generate a new "row number" column in this final dataset.
+cleaned_joined_mort_rr_data_long_summary_cdlt_subset <- cleaned_joined_mort_rr_data_long_summary_cdlt %>%
+  filter(age_interval == "0-1") %>%
+  rename(ex_actual_life_table = ex, 
+         pm_ier_2019 = pm_level) %>%
+  mutate(life_years_lost = counterfactual_life_exp - ex_actual_life_table, 
+         row_id = row_number()) %>%
+  select(pm_ier_2019, ex_actual_life_table, counterfactual_life_exp, life_years_lost, row_id) %>%
+  arrange(pm_ier_2019) %>%
+  arrange(row_id)
+
+#> sanity check: life_years_lost > 0 ?
+ 
+#>
 ```
 
