@@ -290,12 +290,12 @@ actual_life_table <- cleaned_joined_mort_rr_data_long_summary
 
 cleaned_joined_mort_rr_data_long_summary_cdlt
 
-# Step 1: Follow Apte et al and Arias et al procedure to derive the counterfactual probability of death
+#> Part 1: Follow Apte et al and Arias et al procedure to derive the counterfactual probability of death after eliminating PM2.5 as a possible cause of death
 
-#> For this cause-deleted part of the script, we calculate similar variable as we did for the "actual_life_table" (which was generated using "all causes" data, which to be clear oes not mean sum of 6 disease channels, but rather the actual "all causes" category of data that we download from the GBD) part of the script, but assuming that the death by pm2.5 (occuring via the sum of the 6 disease channels) is eliminated. Given that assumption we calculate a new life table, which we name as the "cause eliminated" life table (because we have eliminated PM2.5 as a cause of death, by summing up the 6 causes mortality data, converted it into life expectancy numbers and then subtracted it from the actual life table). Given this, how does the life expectancy at different age intervals changes and how does that compare to the actual life table? This is the question that we finally answer by taking a difference between the actual table and the cause-eliminated table. 
+# For this cause-deleted part of the script, we calculate similar variable as we did for the "actual_life_table" (which was generated using "all causes" data, which to be clear oes not mean sum of 6 disease channels, but rather the actual "all causes" category of data that we download from the GBD) part of the script, but assuming that the death by pm2.5 (occuring via the sum of the 6 disease channels) is eliminated. Given that assumption we calculate a new life table, which we name as the "cause eliminated" life table (because we have eliminated PM2.5 as a cause of death, by summing up the 6 causes mortality data, converted it into life expectancy numbers and then subtracted it from the actual life table). Given this, how does the life expectancy at different age intervals changes and how does that compare to the actual life table? This is the question that we finally answer by taking a difference between the actual table and the cause-eliminated table. 
 
 
-#> The following computation is based on Apte et al, 2018 and Arias et al 2013 papers. The terminology is a mix of both so, refer both papers. Although Arias paper explains the underlying concepts in a much more clear fashion.
+# The following computation is based on Apte et al, 2018 and Arias et al 2013 papers. The terminology is a mix of both so, refer both papers. Although Arias paper explains the underlying concepts in a much more clear fashion.
 
 # Add a alpha_x column to the "cleaned_joined_mort_rr_data_long_summary_cdlt" dataset
 cleaned_joined_mort_rr_data_long_summary_cdlt <- cleaned_joined_mort_rr_data_long_summary_cdlt %>%
@@ -309,9 +309,63 @@ cleaned_joined_mort_rr_data_long_summary_cdlt <- cleaned_joined_mort_rr_data_lon
 cleaned_joined_mort_rr_data_long_summary_cdlt <- cleaned_joined_mort_rr_data_long_summary_cdlt %>%
   left_join(actual_life_table, by = c("age_interval", "age_interval_ll", "age_interval_ul", "age_gap", "alpha_x", "pm_level"))
 
-#  Compute nqx_deleted using nrx and nqx. nrx = nqx_attrib/nqx in Apte et al (2018) supplemental information section. This is equivalent to pm_nmx/nmx in Arias et al (Equation 6)
+#  Compute nqx_deleted using nrx and nqx. nrx = nqx_attrib/nqx in Apte et al (2018) supplemental information section. This is equivalent to pm_nmx/nmx in Arias et al (Equation 6). 
 
-cleaned_joined_mort_rr_data_long_summary_cdlt
+cleaned_joined_mort_rr_data_long_summary_cdlt <- cleaned_joined_mort_rr_data_long_summary_cdlt %>%
+  mutate(nrx = pm_nmx/nmx, 
+         nqx_del = 1 - ((1 - nqx)^(1 - nrx)))
+
+#> Part-2: Calculate cause deleted life expectancy
+ 
+# Compute lx_del, which is the cause deleted population of cohort still alive at the beginning of age interval and sort by pm_level, age_interval_ll
+cleaned_joined_mort_rr_data_long_summary_cdlt <- cleaned_joined_mort_rr_data_long_summary_cdlt %>%
+  mutate(lx_del = NA) %>%
+  arrange(pm_level, age_interval_ll)
+
+# Compute "lx_del" (which is the cause-deleted version of lx, which we calculated in the actual life table)
+cleaned_joined_mort_rr_data_long_summary_cdlt <- cleaned_joined_mort_rr_data_long_summary_cdlt %>%
+   mutate(lx_del = 100000) %>%
+  group_by(pm_level) %>%
+  mutate(lx_del = ifelse(age_interval != "0-1", (lx_del[temp_grp_wise_row_number - 1] * (1 - nqx_del[temp_grp_wise_row_number - 1])), 100000)) %>%
+  ungroup()
+
+
+# Compute "nlx_del" (which is the corresponding version of nlx, which we calculated in the actual life table) using nfx from "actual life table"
+cleaned_joined_mort_rr_data_long_summary_cdlt <- cleaned_joined_mort_rr_data_long_summary_cdlt %>%
+  mutate(nlx_del = NA) %>%
+  group_by(pm_level) %>%
+  mutate(nlx_del = ((age_gap[temp_grp_wise_row_number] - nfx[temp_grp_wise_row_number]) * (lx_del[temp_grp_wise_row_number])) + (nfx[temp_grp_wise_row_number] * lx[temp_grp_wise_row_number + 1])) %>%
+  ungroup()
+
+
+#> Compute tx_del
+
+cleaned_joined_mort_rr_data_long_summary_cdlt <- cleaned_joined_mort_rr_data_long_summary_cdlt %>%
+  mutate(tx_del = NA,
+         temp_row_num = row_number(),
+         tx_del = ifelse(age_interval == "95+", (ex[temp_row_num]*lx_del[temp_row_num])/(1 - nrx[temp_row_num]), NA))
+
+# Each pm level corresponds to 21 age categories and in total there are 18 unique pm levels. To calculate tx_del, we use a nested for loop. The first for loop goes through each pm level and for each pm level we go through all age categories (except the max(age_interval_lower, i.e. 95+, for which we have already assigned a value above), but we start from the "last age category - 1", i.e. the age category that is one below the max age category (for which we already have a value for tx_del). Note that this happens for each pm level, which is why this process repeats 18 times as, 18 is the number of unique pm levels we have in our current dataset. All of this is done so that the following formula for tx_del can be implemented in code: tx_del[current_grp_wise_row_number + 1] + nlx_del[current_grp_wise_row_number] 
+
+for(i in 1:num_unique_pm_levels){
+  if(i == 1){
+     temp_grp <- cleaned_joined_mort_rr_data_long_summary_cdlt[1 : num_unique_age_cat, ]
+  } else {
+    temp_grp <- cleaned_joined_mort_rr_data_long_summary_cdlt[((((i - 1)*(num_unique_age_cat)) + 1) : (i * num_unique_age_cat)), ]
+  }
+   temp_grp <- temp_grp %>%
+      select(ex, lx_del, nrx, tx_del, nlx_del) %>%
+  print(str_c("Iteration number", i, sep = "-"))
+  for(j in (num_unique_age_cat - 1): 1){
+  temp_grp$tx_del[j] <- temp_grp$nlx_del[j] + temp_grp$tx_del[j+1]
+  }
+  if(i == 1){
+     cleaned_joined_mort_rr_data_long_summary_cdlt$tx_del[1:num_unique_age_cat] <- temp_grp$tx_del
+  } else {
+    cleaned_joined_mort_rr_data_long_summary_cdlt$tx_del[((((i - 1)*(num_unique_age_cat)) + 1) :(i * num_unique_age_cat))] <- temp_grp$tx_del
+  }
+
+}
 
 ```
 

@@ -492,7 +492,7 @@ tempfile actual_table
 		by pm_level: replace lx_del = lx_del[_n - 1] * (1 - nqx_del[_n - 1]) ///
 				if age_cat == `i' 
 	}
-
+	
 	* compute nLx_del using nfx from part 1
 	sort pm_level age_cat
 	gen nLx_del = .
