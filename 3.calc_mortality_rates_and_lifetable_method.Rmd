@@ -367,5 +367,12 @@ for(i in 1:num_unique_pm_levels){
 
 }
 
+#> Compute counterfactual life expectancy at any given age interval "x"
+
+cleaned_joined_mort_rr_data_long_summary_cdlt <- cleaned_joined_mort_rr_data_long_summary_cdlt %>%
+  mutate(counterfactual_life_exp = tx_del/lx_del,
+         counterfactual_life_exp = plyr::round_any(counterfactual_life_exp, 0.000001))
+
+#> 
 ```
 
