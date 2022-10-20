@@ -37,6 +37,8 @@ devtools::document()
 
 # global parameters 
 gbd_year <- 2019
+who_pm2.5_guideline <- 5
+aqli_lyl_constant <- 0.098
 
 # global average PM2.5 value (taken from the latest AQLI color dataset that corresponds to the June 2022 AQLI Annual report)
 global_avg_pm2.5 <- 27.5
@@ -376,16 +378,67 @@ cleaned_joined_mort_rr_data_long_summary_cdlt <- cleaned_joined_mort_rr_data_lon
 #> create final dataset (which is a subset of "cleaned_joined_mort_rr_data_long_summary_cdlt") for plotting and generate a "life_years_lost" column, which represents life years lost due to PM2.5 risk. Also generate a new "row number" column in this final dataset.
 cleaned_joined_mort_rr_data_long_summary_cdlt_subset <- cleaned_joined_mort_rr_data_long_summary_cdlt %>%
   filter(age_interval == "0-1") %>%
-  rename(ex_actual_life_table = ex, 
-         pm_ier_2019 = pm_level) %>%
+  rename(ex_actual_life_table = ex) %>%
   mutate(life_years_lost = counterfactual_life_exp - ex_actual_life_table, 
          row_id = row_number()) %>%
-  select(pm_ier_2019, ex_actual_life_table, counterfactual_life_exp, life_years_lost, row_id) %>%
-  arrange(pm_ier_2019) %>%
-  arrange(row_id)
+  select(pm_level, ex_actual_life_table, counterfactual_life_exp, life_years_lost, row_id) %>%
+  rename(life_years_lost_ier2019 = life_years_lost) %>%
+  arrange(pm_level) %>%
+  arrange(row_id) %>%
+  select(row_id, pm_level, everything())
 
 #> sanity check: life_years_lost > 0 ?
- 
-#>
+
+#> final methods analysis dataset (adding a life years lost column (based on the AQLI methodology) to the  "cleaned_joined_mort_rr_data_long_summary_cdlt_subset" dataset)
+final_methods_analysis_dataset <- cleaned_joined_mort_rr_data_long_summary_cdlt_subset %>%
+  mutate(life_years_lost_aqli = (pm_level - who_pm2.5_guideline)*aqli_lyl_constant, 
+         marginal_life_years_lost_ier2019 = splinefun(x = final_methods_analysis_dataset$pm_level, 
+                            y = final_methods_analysis_dataset$life_years_lost_aqli))
+
+#> Approximating a derivative function using the "splinefun" function
+ier_gbd_2019_empirical <- splinefun(x = final_methods_analysis_dataset$pm_level, 
+                                    y = final_methods_analysis_dataset$life_years_lost_ier2019)
+
+# aqli empirical derivative fun
+aqli_empirical <- splinefun(x = final_methods_analysis_dataset$pm_level, 
+                            y = final_methods_analysis_dataset$life_years_lost_aqli)
+
+#> create a long version of the final analysis dataset
+final_methods_analysis_dataset_long <- final_methods_analysis_dataset %>%
+  pivot_longer(cols = life_years_lost_ier2019:life_years_lost_aqli, names_to = "method_name", 
+               values_to = "life_years_lost")
+
+
+#> Plot 1 (using wide): Plotting Life Expectancy Loss as a function of PM2.5 concentration
+
+foo <- final_methods_analysis_dataset %>%
+  filter(pm_level <= 120) %>%
+  ggplot() +
+  geom_point(mapping = aes(x = pm_level, y = life_years_lost_ier2019), color = "red") + 
+  geom_smooth(mapping = aes(x = pm_level, y = life_years_lost_ier2019), color = "red", size = 1.3, se = FALSE, linetype = "solid") +
+  geom_point(mapping = aes(x = pm_level, y = life_years_lost_aqli), color = "blue") +
+  geom_smooth(mapping = aes(x = pm_level, y = life_years_lost_aqli), color = "blue", size = 1.3,  se = FALSE) +
+  scale_y_continuous(breaks = seq(0, 11, 1)) + 
+  scale_x_continuous(breaks = seq(0, 130, 10)) + 
+  theme_minimal()
+
+#> Plot 1 (using long): Plotting Life Expectancy loss as a function of PM2.5 concentration
+final_methods_analysis_dataset_long %>%
+  ggplot(mapping = aes(x = pm_level, y = life_years_lost)) +
+  geom_point(mapping = aes(color = method_name)) + 
+  geom_line(mapping = aes(color = method_name))
+
+
+# plotting empirical version of plot 1
+ggplot(data = tibble(x = 1:120), mapping = aes(x = x)) +
+  geom_function(fun = ier_gbd_2019_empirical, size = 1, args = list(deriv = 1), color = "red") + 
+  geom_function(fun = aqli_empirical, size = 1, args = list(deriv = 1), color = "blue") + 
+  scale_y_continuous(breaks = seq(0, 0.2, 0.025)) +
+  scale_x_continuous(breaks = seq(0, 130, 10)) + 
+  ggthemes::theme_clean() + 
+  labs(x = "PM level (microgram per cubic meter)", y = "Life Years Lost/microgram per cubic meter") +
+  scale_color_manual(c("red" = "GBD 2019 (IER)", "blue" = "AQLI"))
+
+
 ```
 
