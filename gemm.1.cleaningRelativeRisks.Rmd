@@ -1,0 +1,41 @@
+---
+title: "Cleaning Relative Risks File"
+author: "Aarsh"
+date: '2022-10-04'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Global parameters and libraries
+```{r lib_glob_parameters}
+
+# libraries
+library(readr)
+library(dplyr)
+library(stringr)
+library(magrittr)
+library(ggplot2)
+library(readr)
+library(tidytext)
+library(tidyr)
+library(tidyverse)
+library(sf)
+library(usethis)
+library(devtools)
+library(readxl)
+
+# load and document (for automatic rendering of the roxygen comments into a man file) to keep things updated
+devtools::load_all()
+devtools::document()
+
+# custom operators
+`%notin%` <- Negate(`%in%`)
+
+# global parameters 
+gbd_year <- 2019
+
+```
+

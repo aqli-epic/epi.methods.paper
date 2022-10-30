@@ -391,9 +391,7 @@ cleaned_joined_mort_rr_data_long_summary_cdlt_subset <- cleaned_joined_mort_rr_d
 
 #> final methods analysis dataset (adding a life years lost column (based on the AQLI methodology) to the  "cleaned_joined_mort_rr_data_long_summary_cdlt_subset" dataset)
 final_methods_analysis_dataset <- cleaned_joined_mort_rr_data_long_summary_cdlt_subset %>%
-  mutate(life_years_lost_aqli = (pm_level - who_pm2.5_guideline)*aqli_lyl_constant, 
-         marginal_life_years_lost_ier2019 = splinefun(x = final_methods_analysis_dataset$pm_level, 
-                            y = final_methods_analysis_dataset$life_years_lost_aqli))
+  mutate(life_years_lost_aqli = (pm_level - who_pm2.5_guideline)*aqli_lyl_constant)
 
 #> Approximating a derivative function using the "splinefun" function
 ier_gbd_2019_empirical <- splinefun(x = final_methods_analysis_dataset$pm_level, 
@@ -433,11 +431,13 @@ final_methods_analysis_dataset_long %>%
 ggplot(data = tibble(x = 1:120), mapping = aes(x = x)) +
   geom_function(fun = ier_gbd_2019_empirical, size = 1, args = list(deriv = 1), color = "red") + 
   geom_function(fun = aqli_empirical, size = 1, args = list(deriv = 1), color = "blue") + 
-  scale_y_continuous(breaks = seq(0, 0.2, 0.025)) +
+  scale_y_continuous(breaks = seq(0, 0.2, 0.025), limits = c(0, .175)) +
   scale_x_continuous(breaks = seq(0, 130, 10)) + 
-  ggthemes::theme_clean() + 
+  ggthemes::theme_hc() + 
   labs(x = "PM level (microgram per cubic meter)", y = "Life Years Lost/microgram per cubic meter") +
-  scale_color_manual(c("red" = "GBD 2019 (IER)", "blue" = "AQLI"))
+  scale_color_manual(values = c("GBD(IER 2019)" = "red", "AQLI" = "blue"))
+
+
 
 
 ```
