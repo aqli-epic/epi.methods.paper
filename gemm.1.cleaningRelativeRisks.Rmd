@@ -65,13 +65,14 @@ gemm_rr_raw <- read_csv("./data/raw/gemm_rr.csv")
 # making a copy of the raw file
 gemm_rr <- as_tibble(gemm_rr_raw)
 
-# remove an extra space from all character columns with numeric information
+# remove an extra space from all character columns with numeric information and also remove an extra space from "stroke "
 gemm_rr$`Age Range (Years)` <- str_remove(gemm_rr$`Age Range (Years)`, "\\s")
 gemm_rr$theta <- str_remove(gemm_rr$theta, "\\s")
 gemm_rr$theta_se <- str_remove(gemm_rr$theta_se, "\\s")
 gemm_rr$alpha <- str_remove(gemm_rr$alpha, "\\s")
 gemm_rr$mu <- str_remove(gemm_rr$mu, "\\s")
 gemm_rr$nu <- str_remove(gemm_rr$nu, "\\s")
+gemm_rr$Cause <- str_replace(gemm_rr$Cause, "Stroke\\s", "Stroke")
 
 # coercing "numeric" columns to class numeric.
 gemm_rr$`Age Range (Years)` <- as.numeric(gemm_rr$`Age Range (Years)`)
@@ -87,17 +88,46 @@ colnames(gemm_rr)[2] <- "age_range"
 
 # assigning cause ids to causes (these ids will remain same for GBD and Meta Regression bits) and save this new dataset as gemm_rr_pre_cause_pm_expanding (more about this in next step)
 gemm_rr_pre_cause_pm_expanding <- gemm_rr %>%
-  mutate(cause_id = 0, 
-         cause_id = ifelse(cause_name == "Chronic obstructive pulmonary disease", 509, cause_id), 
+  mutate(cause_id = 0,
+    cause_id = ifelse(cause_name == "Chronic obstructive pulmonary disease", 509, cause_id), 
          cause_id = ifelse(cause_name == "Ischaemic heart disease", 493, cause_id), 
          cause_id = ifelse(cause_name == "Lower respiratory infections", 322, cause_id), 
          cause_id = ifelse(cause_name == "Stroke", 494, cause_id), 
-         cause_id = ifelse(cause_name == "Lung Cancer", 426, cause_id), 
+         cause_id = ifelse(cause_name == "Lung cancer", 426, cause_id), 
          cause_id = ifelse(cause_name == "Non-communicable disease and lower respiratory infections", 9999, cause_id))
 
-# for each cause, expand rows into consistent format
+#> for each cause, expand rows into consistent format
 
 # Assumption: causes: 509, 426, 322: these are the causes for which we do not have age-wise/pm-level information, i.e. just a single row in the "raw" dataset. So, for each of these causes, we will assign their exact same information to age intervals starting from 25 and going to 95+, i.e. we are assuming that all of the information available for each of these causes stays the same for all age groups, hence we will extend that information to all those age groups by extending the dataset. Then, we will take the output of that process and assign it to pm levels starting from 1 to 120 micrograms per cubic meter. So, each pm level will have that exact same age wise data.
+
+# first set of cause id's with just a single row in the raw dataset
+cause_ids_single_row <- c(509, 426, 322)
+
+# create a list that will store cause wise datasets that will be latter appended together
+list_single_row_cause_wise_data <- list()
+
+# create the a vector that contains the lower limits of the age buckets
+age_buckets_ll_vec <- seq(25, 95, 5)
+
+# create pm buckets 
+pm_buckets_vec <- seq(0, 121, 1)
+
+for(i in 1 : length(cause_ids_single_row)){
+  # create a temp dataframe of with 2 columns: age_buckets_ll, pm_buckets
+tmp_df <- tibble(age_buckets_ll = rep(age_buckets_ll_vec, times = length(pm_buckets_vec)), 
+                 pm_buckets = rep(pm_buckets_vec, each = length(age_buckets_ll_vec)))
+
+list_single_row_cause_wise_data[[i]] <- gemm_rr_pre_cause_pm_expanding %>% 
+  filter(cause_id == cause_ids_single_row[i]) %>%
+  slice(rep(1:n(), times = nrow(tmp_df))) %>%
+  cbind(tmp_df)
+}
+
+
+# create a dataframe in which we have a complete age range row set (from 25 to 95) for all pm buckets. Given that their are, 15 age buckets and 122 pm buckets, this will result in a final dataset of 15*122 = 1830 rows.
+
+
+# start the expanding process, with the causes with cause id: 509, 426, 322 (ones which only have 1 row in the raw dataset)
 
 
 ```
