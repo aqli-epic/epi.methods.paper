@@ -1,0 +1,40 @@
+﻿Cause,Age Range (Years),theta,theta_se,alpha,mu,nu
+Non-communicable disease and lower respiratory infections,27.5 ,0.1585 ,0.01477 ,1.6 ,15.5 ,36.8 
+Non-communicable disease and lower respiratory infections,32.5 ,0.1577 ,0.01470 ,1.6 ,15.5 ,36.8 
+Non-communicable disease and lower respiratory infections,37.5 ,0.1570 ,0.01463 ,1.6 ,15.5 ,36.8 
+Non-communicable disease and lower respiratory infections,42.5 ,0.1558 ,0.01450 ,1.6 ,15.5 ,36.8 
+Non-communicable disease and lower respiratory infections,47.5 ,0.1532 ,0.01425 ,1.6 ,15.5 ,36.8 
+Non-communicable disease and lower respiratory infections,52.5 ,0.1499 ,0.01394 ,1.6 ,15.5 ,36.8 
+Non-communicable disease and lower respiratory infections,57.5 ,0.1462 ,0.01361 ,1.6 ,15.5 ,36.8 
+Non-communicable disease and lower respiratory infections,62.5 ,0.1421 ,0.01325 ,1.6 ,15.5 ,36.8 
+Non-communicable disease and lower respiratory infections,67.5 ,0.1374 ,0.01284 ,1.6 ,15.5 ,36.8 
+Non-communicable disease and lower respiratory infections,72.5 ,0.1319 ,0.01234 ,1.6 ,15.5 ,36.8 
+Non-communicable disease and lower respiratory infections,77.5 ,0.1253 ,0.01174 ,1.6 ,15.5 ,36.8 
+Non-communicable disease and lower respiratory infections,85 ,0.1141 ,0.01071 ,1.6 ,15.5 ,36.8 
+Ischaemic heart disease,27.5 ,0.5070 ,0.02458 ,1.9 ,12 ,40.2 
+Ischaemic heart disease,32.5 ,0.4762 ,0.02309 ,1.9 ,12 ,40.2 
+Ischaemic heart disease,37.5 ,0.4455 ,0.02160 ,1.9 ,12 ,40.2 
+Ischaemic heart disease,42.5 ,0.4148 ,0.02011 ,1.9 ,12 ,40.2 
+Ischaemic heart disease,47.5 ,0.3841 ,0.01862 ,1.9 ,12 ,40.2 
+Ischaemic heart disease,52.5 ,0.3533 ,0.01713 ,1.9 ,12 ,40.2 
+Ischaemic heart disease,57.5 ,0.3226 ,0.01564 ,1.9 ,12 ,40.2 
+Ischaemic heart disease,62.5 ,0.2919 ,0.01415 ,1.9 ,12 ,40.2 
+Ischaemic heart disease,67.5 ,0.2612 ,0.01266 ,1.9 ,12 ,40.2 
+Ischaemic heart disease,72.5 ,0.2304 ,0.01117 ,1.9 ,12 ,40.2 
+Ischaemic heart disease,77.5 ,0.1997 ,0.00968 ,1.9 ,12 ,40.2 
+Ischaemic heart disease,85 ,0.1536 ,0.00745 ,1.9 ,12 ,40.2 
+Stroke ,27.5 ,0.4513 ,0.11919 ,6.2 ,16.7 ,23.7 
+Stroke ,32.5 ,0.4240 ,0.11197 ,6.2 ,16.7 ,23.7 
+Stroke ,37.5 ,0.3966 ,0.10475 ,6.2 ,16.7 ,23.7 
+Stroke ,42.5 ,0.3693 ,0.09752 ,6.2 ,16.7 ,23.7 
+Stroke ,47.5 ,0.3419 ,0.09030 ,6.2 ,16.7 ,23.7 
+Stroke ,52.5 ,0.3146 ,0.08307 ,6.2 ,16.7 ,23.7 
+Stroke ,57.5 ,0.2872 ,0.07585 ,6.2 ,16.7 ,23.7 
+Stroke ,62.5 ,0.2598 ,0.06863 ,6.2 ,16.7 ,23.7 
+Stroke ,67.5 ,0.2325 ,0.06190 ,6.2 ,16.7 ,23.7 
+Stroke ,72.5 ,0.2051 ,0.05418 ,6.2 ,16.7 ,23.7 
+Stroke ,77.5 ,0.1778 ,0.04695 ,6.2 ,16.7 ,23.7 
+Stroke ,85 ,0.1368 ,0.03611 ,6.2 ,16.7 ,23.7 
+Chronic obstructive pulmonary disease,,0.2510 ,0.06762 ,6.5 ,2.5 ,32 
+Lung cancer,,0.2942 ,0.06147 ,6.2 ,9.3 ,29.8 
+Lower respiratory infections,,0.4468 ,0.11735 ,6.4 ,5.7 ,8.4 

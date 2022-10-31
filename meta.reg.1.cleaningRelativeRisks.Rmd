@@ -1,0 +1,158 @@
+---
+title: "Cleaning Relative Risks File"
+author: "Aarsh"
+date: '2022-10-04'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Global parameters and libraries
+```{r lib_glob_parameters}
+
+# libraries
+library(readr)
+library(dplyr)
+library(stringr)
+library(magrittr)
+library(ggplot2)
+library(readr)
+library(tidytext)
+library(tidyr)
+library(tidyverse)
+library(sf)
+library(usethis)
+library(devtools)
+library(readxl)
+
+# load and document (for automatic rendering of the roxygen comments into a man file) to keep things updated
+devtools::load_all()
+devtools::document()
+
+# custom operators
+`%notin%` <- Negate(`%in%`)
+
+# global parameters 
+gbd_year <- 2019
+
+```
+
+## Cleaning the relative rates file
+
+```{r cleanRelativeRatesRawFile}
+
+#> reading in the raw .xlsx file for relative risks dataset from GBD for the year mentioned up top in the "lib_glob_parameters" code chunk
+rr_dataset_2019_raw <- readxl::read_xlsx("./data/raw/ihme_gbd_2019_relative_risks_by_cause.xlsx")
+
+#> creating a copy of the raw dataset and then using that for all analysis
+rr_dataset_2019 <- rr_dataset_2019_raw
+
+#> adding some basic structure to the raw data file such that we can clearly recognize the column names before we start cleaning. In doing so, remove the unnecessary descritive information from the file and only keep the information that is relevant for analysis.
+
+# assign column names, which as of now are present in different rows (because the raw file was formatted this way).
+colnames(rr_dataset_2019)[1:4] <- rr_dataset_2019[1, 1:4] 
+colnames(rr_dataset_2019)[5:ncol(rr_dataset_2019)] <- rr_dataset_2019[2, 5:ncol(rr_dataset_2019)] 
+
+# getting rid of first and second row of the dataset because they contain "column name" information, which has already been placed in its proper place in the step above.
+rr_dataset_2019 <- rr_dataset_2019[4:nrow(rr_dataset_2019), ]
+
+# rename certain columns (just removing spaces in between and converting to snake case)
+colnames(rr_dataset_2019)[1] <- "cause" # "Risk/Outcome" column renamed to "Cause"
+colnames(rr_dataset_2019)[2] <- "pm_level"
+colnames(rr_dataset_2019)[3] <- "mortality_morbidity"
+colnames(rr_dataset_2019)[4] <- "sex"
+colnames(rr_dataset_2019)[5] <- "all_ages"
+
+# removing the word "years" from the "ages" column names and also remove  any "+" signs in age columns (e.g. "95+")
+age_name_column_names_vec <- colnames(rr_dataset_2019)[str_detect(colnames(rr_dataset_2019), "years")]
+age_name_column_names_vec_years_removed <- str_replace(age_name_column_names_vec, "years", "")
+# age_name_column_names_vec_years_removed <- str_replace(age_name_column_names_vec_years_removed, "\\+", "")
+
+# rename "ages" column using the new "years removed age column names"
+colnames(rr_dataset_2019)[str_detect(colnames(rr_dataset_2019), "years")] <- age_name_column_names_vec_years_removed
+
+# remove the "µg/m³" sign from the pm_level column
+rr_dataset_2019[, "pm_level"] <- str_remove(as.vector(unlist(rr_dataset_2019[, "pm_level"])), "µg/m³")
+
+# keep only the relative risks numbers and remove all confidence interval information from all columns. For example: if we have this: "2.345 (1.234 to 3.232)", after cleaning we should be left with "2.345".
+rr_dataset_2019[, 5:ncol(rr_dataset_2019)] <- map_dfc(rr_dataset_2019[, 5:ncol(rr_dataset_2019)], function(x){as.numeric(str_replace(x, "\\(.+\\)$", ""))})
+
+# dropping certain unnecessary identifier columns: "mortality_morbidity" (whose value = 'both' for all rows), "sex" (whose value = 'both' for all rows)
+
+rr_dataset_2019 <- rr_dataset_2019 %>%
+  select(-c(mortality_morbidity, sex))
+
+#> impute relative risk values for all age categories of the following causes: "Lower Respiratory Infections", "Tracheal, Bronchus and lung cancer", "Chronic Obstructive Pulmonary Disease", "Diabetes mellitus type 2" by using the "all_ages" column relative risks. The assumption is that relative risks for these diseases do not vary by age, so the imputation simply copies the "all_ages" column number for a given cause "x" (the ones listed in this paragraph) into all other age categories for cause "x". Need to check if this assumption is actually backed by solid research. 
+
+#> Note that it is possible that in the coming years, age wise relative risks data starts to become available for the above 4 causes. This is why the vector named "age_wise_rr_data_not_available" below may change (and has to be accordingly updated) from one year to the next. Please make sure to do so before running the code.
+age_wise_rr_data_available <- c("Ischaemic heart disease", "Stroke")
+
+# list of all "unique" causes in the relative risks data
+all_causes_list <- unique(rr_dataset_2019$cause)
+
+# Please double check this for the latest dataset in question. This specifically refers to the number of the column from where the age categories start. In the current dataset, the first age category (i.e. 25-29) is the fourth column, which is why as of now it equates to 4. 
+age_categories_col_start_number <- 4
+
+# This loop goes through the relative risks dataset row by row and if a cause is NOT in "age_wise_rr_data_available" list of causes, it copies the "all_ages" value into all other age category columns. This is following from the imputation assumption explained above.
+for(i in 1:nrow(rr_dataset_2019)){
+ if(rr_dataset_2019$cause[i] %in% age_wise_rr_data_available){
+   next
+ } else {
+   rr_dataset_2019[i, age_categories_col_start_number:ncol(rr_dataset_2019)] <- as.numeric(rr_dataset_2019[i, "all_ages"])
+ }
+}
+
+#> now we don't need the "all_ages" column so I am dropping it
+rr_dataset_2019 <- rr_dataset_2019 %>%
+  select(-c(all_ages))
+
+#> reshaping the above dataset to a long format, so that age category becomes a single column. Note: there is an additional space in each of the age cateogry column names. For example: the column name "25-29" is actually "25-29 ".
+rr_dataset_2019_long <- rr_dataset_2019 %>%
+  pivot_longer(cols = `25-29 `:`95+ `, names_to = "age_interval", values_to = "relative_risk")
+
+#> add an age_interval_lower column to the relative risks dataset
+rr_dataset_2019_long <- rr_dataset_2019_long %>%
+  mutate(age_interval_ll = str_extract(age_interval, "(.+)-"), 
+         age_interval_ll = str_extract(age_interval_ll, "[^-]+"), 
+         age_interval_ul = str_extract(age_interval, "-(.+)"), 
+         age_interval_ul = str_extract(age_interval_ul, "[^-]+"), 
+         age_interval_ll = ifelse(str_detect(age_interval, "95"), 95, age_interval_ll), 
+         age_interval_ul = ifelse(str_detect(age_interval, "95"), 95, age_interval_ul))
+
+#> encode the "cause" column for consistency, i.e. create a new column called "cause_id" that will map 
+#> each "cause_name" to a corresponding identifier number. Use the same encoding in the mortality rates cleaning file.
+
+rr_dataset_2019_long <- rr_dataset_2019_long %>%
+  mutate(cause_id = ifelse(cause == "Lower respiratory infections", 322, cause), 
+         cause_id = ifelse(cause == "Tracheal, bronchus, and lung cancer", 426,  cause_id), 
+         cause_id = ifelse(cause == "Ischemic heart disease", 493, cause_id), 
+         cause_id = ifelse(cause == "Stroke", 494, cause_id), 
+         cause_id = ifelse(cause == "Chronic obstructive pulmonary disease", 509, cause_id), 
+         cause_id = ifelse(cause == "Diabetes mellitus type 2", 587, cause_id))
+
+#> sorting the dataset by cause, age_interval, pm_level columns
+rr_dataset_2019_long <- rr_dataset_2019_long %>%
+  arrange(cause, age_interval, pm_level)
+
+
+#> coercing certain numeric columns to class "numeric"
+rr_dataset_2019_long$pm_level <- as.numeric(rr_dataset_2019_long$pm_level)
+rr_dataset_2019_long$relative_risk <- as.numeric(rr_dataset_2019_long$relative_risk)
+rr_dataset_2019_long$age_interval_ll <- as.numeric(rr_dataset_2019_long$age_interval_ll)
+rr_dataset_2019_long$age_interval_ul <- as.numeric(rr_dataset_2019_long$age_interval_ul)
+rr_dataset_2019_long$cause_id <- as.numeric(rr_dataset_2019_long$cause_id)
+ 
+#> reshaping the relative risks data back to wide, moving the pm level wise relative risks in the columns, so that the [cause, age_interval] combination can become a unique identifier. This way, we can easily merge the relative risks dataset with the mortality rates dataset.
+rr_dataset_2019_wide_final <- rr_dataset_2019_long %>%
+  pivot_wider(names_from = "pm_level", names_prefix = "relative_risk_pm", values_from = "relative_risk")
+
+#> writing the cleaned relative risks file to the data/intermediate folder 
+rr_dataset_2019_wide_final %>%
+  write_csv("./data/intermediate/cleaned_relative_risks.csv")
+
+# next step is to merge this dataset with the cleaned mortality rates dataset, which will happen in the "calc_mortality_rates.Rmd" file
+
+```
+

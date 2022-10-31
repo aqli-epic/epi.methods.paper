@@ -37,5 +37,68 @@ devtools::document()
 # global parameters 
 gbd_year <- 2019
 
+
+# Notes about the Global Exposure Mortality Model in Burnett et al. (2018)
+# Focus primarily on 15 cohorts examining long-term exposure and mortality. 
+# 1 cohort is a study of Chinese men w/ exposures up to 84.
+# Focus on non-accidental deaths (nearly all due to non-communicable diseases)
+# and lower respiratory infections.
+# Complimented with data from 26 additional cohorts (in which no access to
+# subject level info).
+# GEMM estimated as a common (possibly nonlinear) hazard ratio model among
+# the 41 cohorts by pooling predictions of the hazard ratio among cohorts over
+# their range of exposure.
+
+# setting some parameters
+ncdlri <- 1 #?
+tmrel <- 2.4 # theoretical minimum pm level as per the paper.
+
+```
+
+## Loading relative risks raw file and prepping it
+
+```{r}
+# load relative risks dataset from Burnett et al (2018 paper) supplementary information section table 2 (S2) and getting it into a format similar to the GBD (IER) relative risks file. We created this file using table S2.
+
+gemm_rr_raw <- read_csv("./data/raw/gemm_rr.csv")
+
+# making a copy of the raw file
+gemm_rr <- as_tibble(gemm_rr_raw)
+
+# remove an extra space from all character columns with numeric information
+gemm_rr$`Age Range (Years)` <- str_remove(gemm_rr$`Age Range (Years)`, "\\s")
+gemm_rr$theta <- str_remove(gemm_rr$theta, "\\s")
+gemm_rr$theta_se <- str_remove(gemm_rr$theta_se, "\\s")
+gemm_rr$alpha <- str_remove(gemm_rr$alpha, "\\s")
+gemm_rr$mu <- str_remove(gemm_rr$mu, "\\s")
+gemm_rr$nu <- str_remove(gemm_rr$nu, "\\s")
+
+# coercing "numeric" columns to class numeric.
+gemm_rr$`Age Range (Years)` <- as.numeric(gemm_rr$`Age Range (Years)`)
+gemm_rr$theta <- as.numeric(gemm_rr$theta)
+gemm_rr$theta_se <- as.numeric(gemm_rr$theta_se)
+gemm_rr$alpha <- as.numeric(gemm_rr$alpha)
+gemm_rr$mu <- as.numeric(gemm_rr$mu)
+gemm_rr$nu <- as.numeric(gemm_rr$nu)
+
+# renaming some columns to make them more uniform (this is given the above raw file, for a different file with a different column naming scheme, this part of the code will be rewritten).
+colnames(gemm_rr)[1] <- "cause_name"
+colnames(gemm_rr)[2] <- "age_range"
+
+# assigning cause ids to causes (these ids will remain same for GBD and Meta Regression bits) and save this new dataset as gemm_rr_pre_cause_pm_expanding (more about this in next step)
+gemm_rr_pre_cause_pm_expanding <- gemm_rr %>%
+  mutate(cause_id = 0, 
+         cause_id = ifelse(cause_name == "Chronic obstructive pulmonary disease", 509, cause_id), 
+         cause_id = ifelse(cause_name == "Ischaemic heart disease", 493, cause_id), 
+         cause_id = ifelse(cause_name == "Lower respiratory infections", 322, cause_id), 
+         cause_id = ifelse(cause_name == "Stroke", 494, cause_id), 
+         cause_id = ifelse(cause_name == "Lung Cancer", 426, cause_id), 
+         cause_id = ifelse(cause_name == "Non-communicable disease and lower respiratory infections", 9999, cause_id))
+
+# for each cause, expand rows into consistent format
+
+# Assumption: causes: 509, 426, 322: these are the causes for which we do not have age-wise/pm-level information, i.e. just a single row in the "raw" dataset. So, for each of these causes, we will assign their exact same information to age intervals starting from 25 and going to 95+, i.e. we are assuming that all of the information available for each of these causes stays the same for all age groups, hence we will extend that information to all those age groups by extending the dataset. Then, we will take the output of that process and assign it to pm levels starting from 1 to 120 micrograms per cubic meter. So, each pm level will have that exact same age wise data.
+
+
 ```
 

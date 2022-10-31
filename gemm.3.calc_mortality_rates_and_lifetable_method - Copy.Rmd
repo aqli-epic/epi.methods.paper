@@ -40,7 +40,7 @@ gbd_year <- 2019
 who_pm2.5_guideline <- 5
 aqli_lyl_constant <- 0.098
 
-# global average PM2.5 value (taken from the latest AQLI color dataset that corresponds to the June 2022 AQLI Annual report)
-global_avg_pm2.5 <- 27.5
 
 ```
+
+
