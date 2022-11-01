@@ -38,3 +38,9 @@ gbd_year <- 2019
 
 ```
 
+## Prep mortality rates file
+
+```{r}
+
+```
+
