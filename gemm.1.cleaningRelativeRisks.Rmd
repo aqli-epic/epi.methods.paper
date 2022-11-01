@@ -161,26 +161,21 @@ for(j in 1:length(cause_ids_age_wise)){
     pivot_wider(names_from = "age_buckets_ll", names_prefix = "age_", values_from = "age_")
 }
 
+#> append datasets for all causes. Datasets for causes with cause ids: 509, 426, 322 are stored in the following list: "list_single_row_cause_wise_data" and data for cause_ids: 493, 494, 9999 are stored in list_age_bucketed_cause_wise_data.
 
+relative_risks_data_gemm_wide <- bind_rows(bind_rows(list_single_row_cause_wise_data), list_age_bucketed_cause_wise_data)
 
+#> reshape dataset to long so that we can easily rename the "age_" columns
+relative_risks_data_gemm_long <- relative_risks_data_gemm_wide %>% 
+  pivot_longer(cols = starts_with("age_"), names_to = "age_interval_ll", 
+               names_prefix = "age_", names_transform = list(age_interval_ll = as.integer), 
+               values_to = "age_") %>%
+  rename(relative_risk = age_)
 
+#> reshape back to wide such that the final relative risks wide dataset has pmlevel wise relative risk columns.For example, "relative_risk4" column woud contain the relative risk for pm_level = 4. Similarly, relative_risk120 would contain relative risk for pm level = 120. This dataset corresponds to the "rr_dset_modified" (line 193) in the STATA legacy code.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+relative_risks_data_gemm_wide_final <- relative_risks_data_gemm_long %>%
+  pivot_wider(names_from = "pm_level", names_prefix = "relative_risk", values_from = "relative_risk")
 
 ```
 
