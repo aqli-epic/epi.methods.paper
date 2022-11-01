@@ -133,7 +133,7 @@ tempfile rr_dset_modified file1 file2 file3 509 426 322 493 494 9999 raw allcaus
 		save "`c'", replace
 	}
 
-	* causes: 493, 494, 9999: For these causes, we have age wise data, but the age brackets are a little different, for e.g. 27.5 instead of 25. So, the first step is to round down the age intervals to ones that fit our format, which starts from 25 and goes till 95+ and assign the same data as was assigned to their nearest age bracket, so data for "27.5" would be assigned to "25", data for "32.5" will be assigned to "30". Also, because our format contains more age brackets than is available in the data provided by the authors, so the last 3 age brackets, i.e. 85, 90, 95, will get the same value as the "80" age bracket.
+	* causes: 493, 494, 9999: For these causes, we have age wise data, but the age brackets are a little different, for e.g. 27.5 instead of 25. So, the first step is to round down the age intervals to ones that fit our format, which starts from 25 and goes till 95+ and assign the same data as was assigned to their nearest age bracket, so data for "27.5" would be assigned to "25", data for "32.5" will be assigned to "30". Also, because our format contains more age brackets than is available in the data provided by the authors, so the last 3 age brackets, i.e. 85, 90, 95, will get the same value as the "80" age bracket. Then each of the pm brackets will be assigned the exact same dataset. In total there are 122 pm levels and each of these levels will be assigned, the same age-bucketed dataset. After that we will reshape it to wide, similar to what we did in the above cause list.
 	foreach c in 493 494 9999{
 		use `raw', clear	
 		keep if cause==`c'

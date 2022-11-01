@@ -110,25 +110,32 @@ list_single_row_cause_wise_data <- list()
 age_buckets_ll_vec <- seq(25, 95, 5)
 
 # create pm buckets 
-pm_buckets_vec <- seq(0, 121, 1)
+pm_level_vec <- seq(0, 121, 1)
 
 for(i in 1 : length(cause_ids_single_row)){
-  # create a temp dataframe of with 2 columns: age_buckets_ll, pm_buckets
-tmp_df <- tibble(age_buckets_ll = rep(age_buckets_ll_vec, times = length(pm_buckets_vec)), 
-                 pm_buckets = rep(pm_buckets_vec, each = length(age_buckets_ll_vec)))
+  # create a temp dataframe of with 2 columns: age_buckets_ll, pm_buckets and adding new columns that will be fed into the formula that outputs the relative risks (under table S2 in the supplementary information section of the Apte 2018 paper). Then finally reshape the dataset for an easy merge later. The "age_" column in the output is the one that contains relative risks information.
+tmp_df <- tibble(age_buckets_ll = rep(age_buckets_ll_vec, times = length(pm_level_vec)), 
+                 pm_level = rep(pm_level_vec, each = length(age_buckets_ll_vec)))
 
 list_single_row_cause_wise_data[[i]] <- gemm_rr_pre_cause_pm_expanding %>% 
   filter(cause_id == cause_ids_single_row[i]) %>%
   slice(rep(1:n(), times = nrow(tmp_df))) %>%
-  cbind(tmp_df)
+  cbind(tmp_df) %>%
+  select(-age_range) %>%
+  mutate(x = pm_level - tmrel,  
+         z = pmax(0, x), 
+         age_ = exp(theta*(log(z/alpha+1)) / (1+exp(-(z-mu)/nu)))) %>%
+  select(cause_name, cause_id, pm_level, age_buckets_ll, age_) %>% # keeping only relevant columns
+  pivot_wider(names_from = "age_buckets_ll", names_prefix = "age_", values_from = "age_") 
 }
 
+# causes: 493, 494, 9999: For these causes, we have age wise data, but the age brackets are a little different, for e.g. 27.5 instead of 25. So, the first step is to round down the age intervals to ones that fit our format, which starts from 25 and goes till 95+ and assign the same data as was assigned to their nearest age bracket, so data for "27.5" would be assigned to "25", data for "32.5" will be assigned to "30". Also, because our format contains more age brackets than is available in the data provided by the authors, so the last 3 age brackets, i.e. 85, 90, 95, will get the same value as the "80" age bracket. Then each of the pm brackets will be assigned the exact same dataset. In total there are 122 pm levels and each of these levels will be assigned, the same age-bucketed dataset. After that we will reshape it to wide, similar to what we did in the above cause list.
 
-# create a dataframe in which we have a complete age range row set (from 25 to 95) for all pm buckets. Given that their are, 15 age buckets and 122 pm buckets, this will result in a final dataset of 15*122 = 1830 rows.
+# set of cause ids for which we have age wise datasets
+cause_ids_age_wise <- c(493, 494, 9999)
 
-
-# start the expanding process, with the causes with cause id: 509, 426, 322 (ones which only have 1 row in the raw dataset)
-
+# create a list that will store cause wise datasets (for those causes on whch we have age wise datasets) that will be later appended together
+list_age_bucketed_cause_wise_data <- list()
 
 ```
 
