@@ -33,14 +33,106 @@ devtools::document()
 # custom operators
 `%notin%` <- Negate(`%in%`)
 
-# global parameters 
-gbd_year <- 2019
-
 ```
 
 ## Prep mortality rates file
 
 ```{r}
+#> reading in the raw .csv file for mortality rates dataset from GBD for the year mentioned uptop in the "lib_glob_parameters" code chunk
+gemm_mr_dataset_2019_raw <- read_csv("./data/raw/gemm_mortality_rates_gbd.csv")
+
+#> drop certain columns and rename others to make them more intuitive
+
+# rename "cause_name" and "val" columns, arrange by (cause, age_id) and keep the following columns: age_id, age_name, cause_name, val.
+gemm_mr_dataset_2019 <- gemm_mr_dataset_2019_raw %>%
+    dplyr::rename(cause = cause_name, 
+         mortal_rate = val, 
+         sex = sex_name) %>%
+  select(age_id, age_name, cause, mortal_rate) %>%
+  arrange(cause, age_id) 
+
+#> Replace `age_name` column's following age_names with the specified counterparts: "<1" (age_id: 235) with "0-1"
+gemm_mr_dataset_2019 <- gemm_mr_dataset_2019 %>%
+  mutate(age_name = str_replace(age_name,  "<1 year", "0-1")) %>%
+  arrange(cause)
+
+#> remove the "years" keyword from the age_name column and "+" from "95+"
+gemm_mr_dataset_2019$age_name <- str_replace(gemm_mr_dataset_2019$age_name, "years", "")
+
+#> Add an `age_interval_lower` and age_interval upper column, which would be the lower limit and upper limit of the `age_name` column and remove the "+" sign from the "age_name" column
+gemm_mr_dataset_2019 <- gemm_mr_dataset_2019 %>%
+  mutate(age_name_ll = ifelse(str_detect(age_name, "\\+") == TRUE, str_replace(age_name, "\\+", "") , str_extract(age_name, "(.)+(-)")), 
+         age_name_ll = str_replace(age_name_ll, "(\\+)|(-)", ""),
+         age_name_ul = ifelse(str_detect(age_name, "\\+") == TRUE, str_replace(age_name, "\\+", "") , str_extract(age_name, "(-)(.)+")), 
+         age_name_ul = str_replace(age_name_ul, "(\\+)|(-)", ""))
+
+#> renaming columns so that we are consistent with the "relative risks" dataset column names. Ultimately th "relative risks" data will be merged with the "mortality rates" dataset. Consistent column names will make the merging code more intuitive. Also, dropping the "age_id" column which is standalone column in the mortality rates datset and does not have a counterpart in the relative risks dataset (so basically is of no use to us).
+
+gemm_mr_dataset_2019 <- gemm_mr_dataset_2019 %>%
+  dplyr::rename(mortality_rate = mortal_rate, 
+         age_interval_ll = age_name_ll,
+         age_interval_ul = age_name_ul, 
+         age_interval = age_name) %>%
+  select(-c(age_id))
+
+#> encode the "cause" column for consistency, i.e. create a new column called "cause_id" that will map 
+#> each "cause_name" to a corresponding identifier number. Use the same encoding in the relative rates cleaning file.
+
+gemm_mr_dataset_2019 <- gemm_mr_dataset_2019 %>%
+  mutate(cause_id = ifelse(cause == "Lower respiratory infections", 322, cause), 
+         cause_id = ifelse(cause == "Tracheal, bronchus, and lung cancer", 426,  cause_id), 
+         cause_id = ifelse(cause == "Ischemic heart disease", 493, cause_id), 
+         cause_id = ifelse(cause == "Stroke", 494, cause_id), 
+         cause_id = ifelse(cause == "Chronic obstructive pulmonary disease", 509, cause_id), 
+         cause_id = ifelse(cause == "Non-communicable diseases", 409, cause_id), 
+         cause_id = ifelse(cause == "All causes", 294, cause_id))
+
+
+#> coerce certain numeric columns into class "numeric"
+gemm_mr_dataset_2019$mortality_rate <- as.numeric(gemm_mr_dataset_2019$mortality_rate)
+gemm_mr_dataset_2019$age_interval_ll <- as.numeric(gemm_mr_dataset_2019$age_interval_ll)
+gemm_mr_dataset_2019$age_interval_ul <- as.numeric(gemm_mr_dataset_2019$age_interval_ul)
+gemm_mr_dataset_2019$cause_id <- as.numeric(gemm_mr_dataset_2019$cause_id)
+
+#> Add an age_gap column, adjusting "0-1" and "95+" separately
+gemm_mr_dataset_2019 <- gemm_mr_dataset_2019 %>%
+  mutate(age_gap = (age_interval_ul - age_interval_ll) + 1, 
+         age_gap = ifelse(age_interval == "0-1", 1, age_gap), 
+         age_gap = ifelse(age_interval == "95+", NA, age_gap))
+
+#> Add an age_category column that maps age categories (starting from "0-1") to numbers. So, "0-1" will be mapped to 1, "1-4" will be mapped to 2, and so on.
+
+# create a age_category to number mapping dataset
+gemm_age_interval_cat_tibble <- tibble(age_interval_ll = unique(gemm_mr_dataset_2019$age_interval_ll))
+gemm_age_interval_cat_tibble <- gemm_age_interval_cat_tibble %>%
+  dplyr::arrange(age_interval_ll) %>%
+  dplyr::mutate(age_interval_category = row_number())
+
+# add an "age_interval_category" column to mr_dataset_2019, by joining it with age_interval_cat_tibble, using "age_interval" as the joining column.
+gemm_mr_dataset_2019 <- gemm_mr_dataset_2019 %>%
+  left_join(gemm_age_interval_cat_tibble, by = "age_interval_ll")
+
+
+#> make "cause" the first column and sort the mortality rates by cause, age_interval
+gemm_mr_dataset_2019 <- gemm_mr_dataset_2019 %>%
+  select(cause, everything()) %>%
+  arrange(cause, age_interval_ll)
+
+#> separately save only the "All causes" rows in a separate dataset. This will be used later on in the Lifetable Method
+gemm_mr_dataset_2019_all_causes <- gemm_mr_dataset_2019 %>%
+  filter(cause == "All causes")
+
+#> Writing the cleaned GBD mortality rates (removing the "All causes" rows) file to the data/intermediate folder
+gemm_mr_dataset_2019 %>%
+  filter(cause %notin% c("All causes")) %>%
+  write_csv("data/intermediate/cleaned_gemm_mortality_rates.csv")
+
+#> Write the cleaned "All cause" rows subset data to the Intermediate folder
+gemm_mr_dataset_2019_all_causes %>%
+  write_csv("data/intermediate/cleaned_gemm_mortality_rates_all_causes_only.csv")
+
+# next step is to merge this dataset with the cleaned relative risks dataset, which will happen in the "gemm.3.calc_mortality_rates_and_lifetable_method.Rmd" file
+
 
 ```
 

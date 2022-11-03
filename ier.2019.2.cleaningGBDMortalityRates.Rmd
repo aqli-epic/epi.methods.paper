@@ -114,8 +114,8 @@ mr_dataset_2019$cause_id <- as.numeric(mr_dataset_2019$cause_id)
 #> Add an age_gap column, adjusting "0-1" and "95+" separately
 mr_dataset_2019 <- mr_dataset_2019 %>%
   mutate(age_gap = (age_interval_ul - age_interval_ll) + 1, 
-         age_gap = ifelse(str_detect(age_interval, "0-1"), 1, age_gap), 
-         age_gap = ifelse(str_detect(age_interval, "95+"), NA, age_gap))
+         age_gap = ifelse(age_interval == "0-1", 1, age_gap), 
+         age_gap = ifelse(age_interval == "95+", NA, age_gap))
 
 #> Add an age_category column that maps age categories (starting from "0-1") to numbers. So, "0-1" will be mapped to 1, "1-4" will be mapped to 2, and so on.
 
@@ -148,7 +148,7 @@ mr_dataset_2019 %>%
 mr_dataset_2019_all_causes %>%
   write_csv("data/intermediate/cleaned_gbd_mortality_rates_all_causes_only.csv")
 
-# next step is to merge this dataset with the cleaned relative risks dataset, which will happen in the "calc_mortality_rates.Rmd" file
+# next step is to merge this dataset with the cleaned relative risks dataset, which will happen in the "ier.2019.3.calc_mortality_rates_and_lifetable_method.Rmd" file
 
 
 ```
