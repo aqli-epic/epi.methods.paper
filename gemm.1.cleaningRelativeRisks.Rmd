@@ -65,6 +65,13 @@ gemm_rr_raw <- read_csv("./data/raw/gemm_rr.csv")
 # making a copy of the raw file
 gemm_rr <- as_tibble(gemm_rr_raw)
 
+# correct spellings of certain causes, to remain consistent with the mortality rates causes column
+gemm_rr <- gemm_rr %>%
+  mutate(Cause = ifelse(Cause == "Non-communicable disease and lower respiratory infections", "Non-communicable diseases and lower respiratory infections", Cause), 
+         Cause = ifelse(Cause == "Ischaemic heart disease", "Ischemic heart disease", Cause), 
+         Cause = ifelse(Cause == "Lung cancer", "Tracheal, bronchus, and lung cancer", Cause))
+
+
 # remove an extra space from all character columns with numeric information and also remove an extra space from "stroke "
 gemm_rr$`Age Range (Years)` <- str_remove(gemm_rr$`Age Range (Years)`, "\\s")
 gemm_rr$theta <- str_remove(gemm_rr$theta, "\\s")
@@ -90,11 +97,11 @@ colnames(gemm_rr)[2] <- "age_range"
 gemm_rr_pre_cause_pm_expanding <- gemm_rr %>%
   mutate(cause_id = 0,
     cause_id = ifelse(cause_name == "Chronic obstructive pulmonary disease", 509, cause_id), 
-         cause_id = ifelse(cause_name == "Ischaemic heart disease", 493, cause_id), 
+         cause_id = ifelse(cause_name == "Ischemic heart disease", 493, cause_id), 
          cause_id = ifelse(cause_name == "Lower respiratory infections", 322, cause_id), 
          cause_id = ifelse(cause_name == "Stroke", 494, cause_id), 
-         cause_id = ifelse(cause_name == "Lung cancer", 426, cause_id), 
-         cause_id = ifelse(cause_name == "Non-communicable disease and lower respiratory infections", 9999, cause_id))
+         cause_id = ifelse(cause_name == "Tracheal, bronchus, and lung cancer", 426, cause_id), 
+         cause_id = ifelse(cause_name == "Non-communicable diseases and lower respiratory infections", 9999, cause_id))
 
 #> for each cause, expand rows into consistent format
 
@@ -172,12 +179,13 @@ relative_risks_data_gemm_long <- relative_risks_data_gemm_wide %>%
                values_to = "age_") %>%
   rename(relative_risk = age_)
 
-#> reshape back to wide such that the final relative risks wide dataset has pmlevel wise relative risk columns.For example, "relative_risk4" column woud contain the relative risk for pm_level = 4. Similarly, relative_risk120 would contain relative risk for pm level = 120. This dataset corresponds to the "rr_dset_modified" (line 193) in the STATA legacy code.
+#> reshape back to wide such that the final relative risks wide dataset has pmlevel wise relative risk columns.For example, "relative_risk4" column woud contain the relative risk for pm_level = 4. Similarly, relative_risk120 would contain relative risk for pm level = 120. This dataset corresponds to the "rr_dset_modified" (line 193) in the STATA legacy code. Also renaming the cause_name variable to "cause" to make it consistent with the mortality rates file.
 
 relative_risks_data_gemm_wide_final <- relative_risks_data_gemm_long %>%
-  pivot_wider(names_from = "pm_level", names_prefix = "relative_risk", values_from = "relative_risk")
+  pivot_wider(names_from = "pm_level", names_prefix = "relative_risk", values_from = "relative_risk") %>%
+  rename(cause = cause_name)
 
-#> write final cleaned relative risks file to the data/intermediate folder.
+#> write final cleaned relative risks file  to the data/intermediate folder.
 relative_risks_data_gemm_wide_final %>%
   write_csv("./data/intermediate/cleaned_relative_risks_gemm.csv")
 

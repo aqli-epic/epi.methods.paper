@@ -35,14 +35,42 @@ devtools::document()
 # custom operators
 `%notin%` <- Negate(`%in%`)
 
-# global parameters 
-gbd_year <- 2019
+#> global parameters 
+
+# WHO Annual Average PM2.5 guideline (as on November 03, 2022)
 who_pm2.5_guideline <- 5
+
+# AQLI lifeyears lost constant
 aqli_lyl_constant <- 0.098
 
-# global variables
-ncdlri <- 1 # this is a switch, which if turned to 1 will produce results for NCD + LRI cause of death. If set to 0, it will produce results for the GEMM 5 Causes of Death.
+# this is a switch, which if turned to 1 will produce results for NCD + LRI cause of death. If set to 0, it will produce results for the GEMM 5 Causes of Death.
+ncdlri <- 1 
+
+# global average PM2.5 (I have assumed that this is the AQLI latest (2020 data, that corresponds to the June 2022 report) global average PM2.5) 
+global_avg_pm2.5 <- 27.5
 
 ```
 
+# Merge relative risks and mortality rates.
+
+```{r}
+#> Read in the cleaned gemm mortality rates file for NCD + LRI
+cleaned_gemm_mortality_rates_ncd_lri <- read_csv("./data/intermediate/cleaned_gemm_mortality_rates_ncd_lri.csv")
+
+#> Read in the cleaned gemm mortality rates file for 5 causes of deaths as per the gemm paper.
+cleaned_gemm_mortality_rates_5_cod <- read_csv("./data/intermediate/cleaned_gemm_mortality_rates_5_cod.csv")
+
+#> Read in cleaned gemm "All causes" only, mortality rates file
+cleaned_gemm_mortality_rates_all_causes_only <- read_csv("./data/intermediate/cleaned_gbd_mortality_rates_all_causes_only.csv")
+
+#> Read in the cleaned gemm relative risks file
+cleaned_gemm_relative_risks <- read_csv("./data/intermediate/cleaned_relative_risks_gemm.csv")
+
+#> join the cleaned mortality and relative risks datasets
+cleaned_joined_gemm_mort_5cod_rr_data <- cleaned_gemm_mortality_rates_5_cod %>%
+  left_join(cleaned_gemm_relative_risks, by = c("cause", "age_interval_ll"))
+
+
+
+```
 

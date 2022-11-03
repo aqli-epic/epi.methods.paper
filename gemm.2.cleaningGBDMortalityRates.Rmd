@@ -132,8 +132,11 @@ gemm_mr_dataset_2019_all_causes %>%
 # ncd + lri dataset
 gemm_mr_dataset_2019_ncd_lri <- gemm_mr_dataset_2019 %>%
   filter(cause %in% c("Non-communicable diseases", "Lower respiratory infections")) %>%
-  group_by(age_interval_ll) %>%
-  summarise(mortality_rate = sum(mortality_rate, na.rm = TRUE))
+  group_by(age_interval_ll, age_interval_ul, age_interval, age_gap, age_interval_category) %>%
+  summarise(mortality_rate = sum(mortality_rate, na.rm = TRUE)) %>%
+  ungroup() %>%
+  mutate(cause = "Non-communicable diseases and lower respiratory infections", 
+         cause_id = 9999)
 
 # dataset for 5 causes of deaths as listed in the gemm paper
 gemm_mr_dataset_2019_5_cod <- gemm_mr_dataset_2019 %>%

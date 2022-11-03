@@ -1,22 +1,22 @@
-age_interval_ll,mortality_rate
-0,766.0234494091029
-1,65.40690025359575
-5,17.1765445842087
-10,14.97121878313816
-15,23.62176830839835
-20,34.09786076399572
-25,45.03257881464191
-30,68.35507318335587
-35,109.39581377866037
-40,178.6683978400164
-45,278.09294500933646
-50,461.4214625730699
-55,733.8681213725928
-60,1160.300058093775
-65,1755.2216411253426
-70,2780.430145328931
-75,4389.140781267832
-80,7380.9639628339155
-85,11622.585899818583
-90,17129.9568738469
-95,26821.00769476258
+age_interval_ll,age_interval_ul,age_interval,age_gap,age_interval_category,mortality_rate,cause,cause_id
+0,1,0-1,1,1,766.0234494091029,Non-communicable diseases and lower respiratory infections,9999
+1,4,1-4 ,4,2,65.40690025359575,Non-communicable diseases and lower respiratory infections,9999
+5,9,5-9 ,5,3,17.1765445842087,Non-communicable diseases and lower respiratory infections,9999
+10,14,10-14 ,5,4,14.97121878313816,Non-communicable diseases and lower respiratory infections,9999
+15,19,15-19 ,5,5,23.62176830839835,Non-communicable diseases and lower respiratory infections,9999
+20,24,20-24 ,5,6,34.09786076399572,Non-communicable diseases and lower respiratory infections,9999
+25,29,25-29 ,5,7,45.03257881464191,Non-communicable diseases and lower respiratory infections,9999
+30,34,30-34 ,5,8,68.35507318335587,Non-communicable diseases and lower respiratory infections,9999
+35,39,35-39 ,5,9,109.39581377866037,Non-communicable diseases and lower respiratory infections,9999
+40,44,40-44 ,5,10,178.6683978400164,Non-communicable diseases and lower respiratory infections,9999
+45,49,45-49 ,5,11,278.09294500933646,Non-communicable diseases and lower respiratory infections,9999
+50,54,50-54 ,5,12,461.4214625730699,Non-communicable diseases and lower respiratory infections,9999
+55,59,55-59 ,5,13,733.8681213725928,Non-communicable diseases and lower respiratory infections,9999
+60,64,60-64 ,5,14,1160.300058093775,Non-communicable diseases and lower respiratory infections,9999
+65,69,65-69 ,5,15,1755.2216411253426,Non-communicable diseases and lower respiratory infections,9999
+70,74,70-74 ,5,16,2780.430145328931,Non-communicable diseases and lower respiratory infections,9999
+75,79,75-79 ,5,17,4389.140781267832,Non-communicable diseases and lower respiratory infections,9999
+80,84,80-84 ,5,18,7380.9639628339155,Non-communicable diseases and lower respiratory infections,9999
+85,89,85-89 ,5,19,11622.585899818583,Non-communicable diseases and lower respiratory infections,9999
+90,94,90-94 ,5,20,17129.9568738469,Non-communicable diseases and lower respiratory infections,9999
+95,95,95+ ,1,21,26821.00769476258,Non-communicable diseases and lower respiratory infections,9999

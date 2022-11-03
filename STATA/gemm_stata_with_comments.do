@@ -39,7 +39,7 @@ local gemm_lx_csv = "`root'/data/intermediate/gemm_life_expectancy.csv"
 * Adjust mortality rates using RR (at global average PM2.5).
 
 * choices
-local ncdlri = 1 // GEMM NCD + LRI = 1 ; GEMM 5-COD = 0
+local ncdlri = 0 // GEMM NCD + LRI = 1 ; GEMM 5-COD = 0
 local mr_yr = 2016
 local global_avg_PM = 45.479 // global population-weighted average PM2.5
 local tmrel = 2.4
