@@ -177,5 +177,9 @@ relative_risks_data_gemm_long <- relative_risks_data_gemm_wide %>%
 relative_risks_data_gemm_wide_final <- relative_risks_data_gemm_long %>%
   pivot_wider(names_from = "pm_level", names_prefix = "relative_risk", values_from = "relative_risk")
 
+#> write final cleaned relative risks file to the data/intermediate folder.
+relative_risks_data_gemm_wide_final %>%
+  write_csv("./data/intermediate/cleaned_relative_risks_gemm.csv")
+
 ```
 

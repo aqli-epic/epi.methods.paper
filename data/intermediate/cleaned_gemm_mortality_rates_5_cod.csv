@@ -1,0 +1,99 @@
+cause,age_interval,mortality_rate,age_interval_ll,age_interval_ul,cause_id,age_gap,age_interval_category
+Chronic obstructive pulmonary disease,0-1,0,0,1,509,1,1
+Chronic obstructive pulmonary disease,1-4 ,0.21150065827892972,1,4,509,4,2
+Chronic obstructive pulmonary disease,5-9 ,0.05236606925529308,5,9,509,5,3
+Chronic obstructive pulmonary disease,10-14 ,0.04819142864915474,10,14,509,5,4
+Chronic obstructive pulmonary disease,15-19 ,0.279075568617567,15,19,509,5,5
+Chronic obstructive pulmonary disease,20-24 ,0.3911096051335453,20,24,509,5,6
+Chronic obstructive pulmonary disease,25-29 ,0.516158078237661,25,29,509,5,7
+Chronic obstructive pulmonary disease,30-34 ,0.8630186227724392,30,34,509,5,8
+Chronic obstructive pulmonary disease,35-39 ,1.4921633972359858,35,39,509,5,9
+Chronic obstructive pulmonary disease,40-44 ,2.9625192454704172,40,44,509,5,10
+Chronic obstructive pulmonary disease,45-49 ,6.252850113573992,45,49,509,5,11
+Chronic obstructive pulmonary disease,50-54 ,14.961883571794772,50,54,509,5,12
+Chronic obstructive pulmonary disease,55-59 ,30.64492941897105,55,59,509,5,13
+Chronic obstructive pulmonary disease,60-64 ,67.63016956542016,60,64,509,5,14
+Chronic obstructive pulmonary disease,65-69 ,128.71351500080073,65,69,509,5,15
+Chronic obstructive pulmonary disease,70-74 ,257.69124935903164,70,74,509,5,16
+Chronic obstructive pulmonary disease,75-79 ,439.3162336328992,75,79,509,5,17
+Chronic obstructive pulmonary disease,80-84 ,783.3655124330926,80,84,509,5,18
+Chronic obstructive pulmonary disease,85-89 ,1117.6204271371364,85,89,509,5,19
+Chronic obstructive pulmonary disease,90-94 ,1320.3560240977288,90,94,509,5,20
+Chronic obstructive pulmonary disease,95+ ,1691.8475670937055,95,95,509,1,21
+Ischemic heart disease,15-19 ,1.444395020733277,15,19,493,5,5
+Ischemic heart disease,20-24 ,3.104235520616928,20,24,493,5,6
+Ischemic heart disease,25-29 ,4.858146294123463,25,29,493,5,7
+Ischemic heart disease,30-34 ,9.904265468946326,30,34,493,5,8
+Ischemic heart disease,35-39 ,17.67662518441408,35,39,493,5,9
+Ischemic heart disease,40-44 ,31.843366303494317,40,44,493,5,10
+Ischemic heart disease,45-49 ,53.898122475704966,45,49,493,5,11
+Ischemic heart disease,50-54 ,90.77653460537684,50,54,493,5,12
+Ischemic heart disease,55-59 ,148.973388942183,55,59,493,5,13
+Ischemic heart disease,60-64 ,237.53225950294544,60,64,493,5,14
+Ischemic heart disease,65-69 ,357.1541878549527,65,69,493,5,15
+Ischemic heart disease,70-74 ,564.950869410563,70,74,493,5,16
+Ischemic heart disease,75-79 ,927.0811526169076,75,79,493,5,17
+Ischemic heart disease,80-84 ,1690.3757689780723,80,84,493,5,18
+Ischemic heart disease,85-89 ,2749.8422683510203,85,89,493,5,19
+Ischemic heart disease,90-94 ,4270.522249342099,90,94,493,5,20
+Ischemic heart disease,95+ ,6713.826207656738,95,95,493,1,21
+Lower respiratory infections,0-1,381.4930996748662,0,1,322,1,1
+Lower respiratory infections,1-4 ,31.72458458244627,1,4,322,4,2
+Lower respiratory infections,5-9 ,4.206542411017248,5,9,322,5,3
+Lower respiratory infections,10-14 ,2.311874517146965,10,14,322,5,4
+Lower respiratory infections,15-19 ,2.185100456252721,15,19,322,5,5
+Lower respiratory infections,20-24 ,2.615062506447063,20,24,322,5,6
+Lower respiratory infections,25-29 ,3.05239258315235,25,29,322,5,7
+Lower respiratory infections,30-34 ,3.6438939926239655,30,34,322,5,8
+Lower respiratory infections,35-39 ,5.008003811832249,35,39,322,5,9
+Lower respiratory infections,40-44 ,6.6066320408595125,40,44,322,5,10
+Lower respiratory infections,45-49 ,8.57627183679493,45,49,322,5,11
+Lower respiratory infections,50-54 ,12.82968340591977,50,54,322,5,12
+Lower respiratory infections,55-59 ,20.134617109820063,55,59,322,5,13
+Lower respiratory infections,60-64 ,34.91943795069766,60,64,322,5,14
+Lower respiratory infections,65-69 ,54.79019911715612,65,69,322,5,15
+Lower respiratory infections,70-74 ,98.80104836426914,70,74,322,5,16
+Lower respiratory infections,75-79 ,175.216497515531,75,79,322,5,17
+Lower respiratory infections,80-84 ,330.58070089785065,80,84,322,5,18
+Lower respiratory infections,85-89 ,603.9723516117135,85,89,322,5,19
+Lower respiratory infections,90-94 ,1071.7052821982102,90,94,322,5,20
+Lower respiratory infections,95+ ,2043.4395453226016,95,95,322,1,21
+Stroke,0-1,4.57960890632351,0,1,494,1,1
+Stroke,1-4 ,0.669335639675284,1,4,494,4,2
+Stroke,5-9 ,0.4213653369416373,5,9,494,5,3
+Stroke,10-14 ,0.5837226745274328,10,14,494,5,4
+Stroke,15-19 ,1.3351878840556624,15,19,494,5,5
+Stroke,20-24 ,2.350915087454992,20,24,494,5,6
+Stroke,25-29 ,3.0927711788548016,25,29,494,5,7
+Stroke,30-34 ,5.339767637488388,30,34,494,5,8
+Stroke,35-39 ,9.82346256716924,35,39,494,5,9
+Stroke,40-44 ,18.724290424945732,40,44,494,5,10
+Stroke,45-49 ,31.929449229285744,45,49,494,5,11
+Stroke,50-54 ,58.76939450960767,50,54,494,5,12
+Stroke,55-59 ,95.14360286889924,55,59,494,5,13
+Stroke,60-64 ,164.0650392389863,60,64,494,5,14
+Stroke,65-69 ,270.31118973563997,65,69,494,5,15
+Stroke,70-74 ,455.7699928209238,70,74,494,5,16
+Stroke,75-79 ,757.6986946243547,75,79,494,5,17
+Stroke,80-84 ,1276.6693313126334,80,84,494,5,18
+Stroke,85-89 ,1951.5169594078147,85,89,494,5,19
+Stroke,90-94 ,2557.4842738194407,90,94,494,5,20
+Stroke,95+ ,3609.30746284594,95,95,494,1,21
+"Tracheal, bronchus, and lung cancer",10-14 ,0.03258810111132008,10,14,426,5,4
+"Tracheal, bronchus, and lung cancer",15-19 ,0.11909326422062388,15,19,426,5,5
+"Tracheal, bronchus, and lung cancer",20-24 ,0.2370624176264449,20,24,426,5,6
+"Tracheal, bronchus, and lung cancer",25-29 ,0.4631656898475256,25,29,426,5,7
+"Tracheal, bronchus, and lung cancer",30-34 ,1.130982769539118,30,34,426,5,8
+"Tracheal, bronchus, and lung cancer",35-39 ,2.4032963524970836,35,39,426,5,9
+"Tracheal, bronchus, and lung cancer",40-44 ,5.523243058895434,40,44,426,5,10
+"Tracheal, bronchus, and lung cancer",45-49 ,12.389953093979903,45,49,426,5,11
+"Tracheal, bronchus, and lung cancer",50-54 ,26.853183693171932,50,54,426,5,12
+"Tracheal, bronchus, and lung cancer",55-59 ,49.55780206812896,55,59,426,5,13
+"Tracheal, bronchus, and lung cancer",60-64 ,83.89928055228368,60,64,426,5,14
+"Tracheal, bronchus, and lung cancer",65-69 ,126.6508865024524,65,69,426,5,15
+"Tracheal, bronchus, and lung cancer",70-74 ,181.63058799233244,70,74,426,5,16
+"Tracheal, bronchus, and lung cancer",75-79 ,224.32466568942755,75,79,426,5,17
+"Tracheal, bronchus, and lung cancer",80-84 ,264.9008196734089,80,84,426,5,18
+"Tracheal, bronchus, and lung cancer",85-89 ,302.47633777017637,85,89,426,5,19
+"Tracheal, bronchus, and lung cancer",90-94 ,274.7260204568325,90,94,426,5,20
+"Tracheal, bronchus, and lung cancer",95+ ,304.5211015570308,95,95,426,1,21

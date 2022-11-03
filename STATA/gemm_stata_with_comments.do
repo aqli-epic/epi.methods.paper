@@ -252,12 +252,13 @@ tempfile rr_dset_modified file1 file2 file3 509 426 322 493 494 9999 raw allcaus
 
 	keep location_name agegroup age_gap age_cat year mortal_rate cause age_interval_lower
 	order year cause location_name agegroup age_gap age_cat age_interval_lower mortal_rate
-
-	preserve
-	keep if inlist(cause, 294)
-	sort age_cat
-	save `"`allcause'"', replace
-	restore
+	
+	* save the "all causes" dataset
+	*preserve
+	*keep if inlist(cause, 294)
+	*sort age_cat
+	*save `"`allcause'"', replace
+	
 
 	* filter according to "GEMM NCD + LRI" or "GEMM 5-COD"	
 	if `ncdlri' == 1 {

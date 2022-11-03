@@ -40,6 +40,8 @@ gbd_year <- 2019
 who_pm2.5_guideline <- 5
 aqli_lyl_constant <- 0.098
 
+# global variables
+ncdlri <- 1 # this is a switch, which if turned to 1 will produce results for NCD + LRI cause of death. If set to 0, it will produce results for the GEMM 5 Causes of Death.
 
 ```
 

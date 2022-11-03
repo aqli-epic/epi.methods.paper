@@ -122,16 +122,33 @@ gemm_mr_dataset_2019 <- gemm_mr_dataset_2019 %>%
 gemm_mr_dataset_2019_all_causes <- gemm_mr_dataset_2019 %>%
   filter(cause == "All causes")
 
-#> Writing the cleaned GBD mortality rates (removing the "All causes" rows) file to the data/intermediate folder
-gemm_mr_dataset_2019 %>%
-  filter(cause %notin% c("All causes")) %>%
-  write_csv("data/intermediate/cleaned_gemm_mortality_rates.csv")
 
-#> Write the cleaned "All cause" rows subset data to the Intermediate folder
+#> Write the cleaned "All cause" rows subset data to the Intermediate folder (note that "All causes" specifically refers to the a category that is named "All causes". It is NOT a sum of the other list of causes present in the dataset.)
 gemm_mr_dataset_2019_all_causes %>%
   write_csv("data/intermediate/cleaned_gemm_mortality_rates_all_causes_only.csv")
 
-# next step is to merge this dataset with the cleaned relative risks dataset, which will happen in the "gemm.3.calc_mortality_rates_and_lifetable_method.Rmd" file.
+#> Create 2 separate datasets: one for NCD + LRI and another for the 5 causes of deaths as listed in the GEMM paper.
+
+# ncd + lri dataset
+gemm_mr_dataset_2019_ncd_lri <- gemm_mr_dataset_2019 %>%
+  filter(cause %in% c("Non-communicable diseases", "Lower respiratory infections")) %>%
+  group_by(age_interval_ll) %>%
+  summarise(mortality_rate = sum(mortality_rate, na.rm = TRUE))
+
+# dataset for 5 causes of deaths as listed in the gemm paper
+gemm_mr_dataset_2019_5_cod <- gemm_mr_dataset_2019 %>%
+  filter(cause %notin% c("All causes", "Non-communicable diseases"))
+
+
+#> Writing the cleaned gemm mortality rates for NCD + LRI to the data/intermediate folder
+gemm_mr_dataset_2019_ncd_lri %>%
+  write_csv("data/intermediate/cleaned_gemm_mortality_rates_ncd_lri.csv")
+
+#> Write the cleaned gemm mortality rates for 5 causes of death
+gemm_mr_dataset_2019_5_cod %>%
+  write_csv("data/intermediate/cleaned_gemm_mortality_rates_5_cod.csv")
+
+# next step is to merge this dataset with the cleaned relative risks dataset , which will happen in the "gemm.3.calc_mortality_rates_and_lifetable_method.Rmd" file. Note that we have 2 types of relative risks datasets at this stage. One is for NCD + LRI and the other is for the 5 causes of death. In the next script, as an input we start of with one of these 2 datasets and the rest of the analysis remains the same for both of these datasets.
 
 
 ```
