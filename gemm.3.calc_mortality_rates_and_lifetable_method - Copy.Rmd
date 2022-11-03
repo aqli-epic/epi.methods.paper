@@ -70,6 +70,8 @@ cleaned_gemm_relative_risks <- read_csv("./data/intermediate/cleaned_relative_ri
 cleaned_joined_gemm_mort_5cod_rr_data <- cleaned_gemm_mortality_rates_5_cod %>%
   left_join(cleaned_gemm_relative_risks, by = c("cause", "age_interval_ll"))
 
+#> 
+
 
 
 ```

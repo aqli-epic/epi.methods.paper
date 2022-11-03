@@ -49,6 +49,7 @@ rr_dataset_2019_raw <- readxl::read_xlsx("./data/raw/ihme_gbd_2019_relative_risk
 #> creating a copy of the raw dataset and then using that for all analysis
 rr_dataset_2019 <- rr_dataset_2019_raw
 
+
 #> adding some basic structure to the raw data file such that we can clearly recognize the column names before we start cleaning. In doing so, remove the unnecessary descritive information from the file and only keep the information that is relevant for analysis.
 
 # assign column names, which as of now are present in different rows (because the raw file was formatted this way).
@@ -64,6 +65,11 @@ colnames(rr_dataset_2019)[2] <- "pm_level"
 colnames(rr_dataset_2019)[3] <- "mortality_morbidity"
 colnames(rr_dataset_2019)[4] <- "sex"
 colnames(rr_dataset_2019)[5] <- "all_ages"
+
+
+#> Spelling correction for the following cause of death: Ischemic heart disease. Change the spelling of "Ischaemic" to "Ischemic"
+rr_dataset_2019 <- rr_dataset_2019 %>%
+  mutate(cause = ifelse(cause == "Ischaemic heart disease", "Ischemic heart disease", cause))
 
 # removing the word "years" from the "ages" column names and also remove  any "+" signs in age columns (e.g. "95+")
 age_name_column_names_vec <- colnames(rr_dataset_2019)[str_detect(colnames(rr_dataset_2019), "years")]
@@ -87,7 +93,7 @@ rr_dataset_2019 <- rr_dataset_2019 %>%
 #> impute relative risk values for all age categories of the following causes: "Lower Respiratory Infections", "Tracheal, Bronchus and lung cancer", "Chronic Obstructive Pulmonary Disease", "Diabetes mellitus type 2" by using the "all_ages" column relative risks. The assumption is that relative risks for these diseases do not vary by age, so the imputation simply copies the "all_ages" column number for a given cause "x" (the ones listed in this paragraph) into all other age categories for cause "x". Need to check if this assumption is actually backed by solid research. 
 
 #> Note that it is possible that in the coming years, age wise relative risks data starts to become available for the above 4 causes. This is why the vector named "age_wise_rr_data_not_available" below may change (and has to be accordingly updated) from one year to the next. Please make sure to do so before running the code.
-age_wise_rr_data_available <- c("Ischaemic heart disease", "Stroke")
+age_wise_rr_data_available <- c("Ischemic heart disease", "Stroke")
 
 # list of all "unique" causes in the relative risks data
 all_causes_list <- unique(rr_dataset_2019$cause)
