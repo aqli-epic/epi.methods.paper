@@ -444,7 +444,36 @@ final_methods_analysis_dataset_gemm_long <- final_methods_analysis_dataset_gemm 
 
 
 
+#> Plot 1 (using wide): Plotting Life Expectancy Loss as a function of PM2.5 concentration
 
+foo <- final_methods_analysis_dataset_gemm %>%
+  filter(pm_level <= 120) %>%
+  ggplot() +
+  geom_point(mapping = aes(x = pm_level, y = life_years_lost_gemm), color = "red") + 
+  geom_smooth(mapping = aes(x = pm_level, y = life_years_lost_gemm), color = "red", size = 1.3, se = FALSE, linetype = "solid") +
+  geom_point(mapping = aes(x = pm_level, y = life_years_lost_aqli), color = "blue") +
+  geom_smooth(mapping = aes(x = pm_level, y = life_years_lost_aqli), color = "blue", size = 1.3,  se = FALSE) +
+  scale_y_continuous(breaks = seq(0, 11, 1)) + 
+  scale_x_continuous(breaks = seq(0, 130, 10)) + 
+  theme_minimal()
+
+#> Plot 1 (using long): Plotting Life Expectancy loss as a function of PM2.5 concentration
+final_methods_analysis_dataset_gemm_long %>%
+  ggplot(mapping = aes(x = pm_level, y = life_years_lost)) +
+  geom_point(mapping = aes(color = method_name)) + 
+  geom_line(mapping = aes(color = method_name)) +
+  scale_y_continuous(breaks = seq(0, 12, 1))
+
+
+# plotting empirical version of plot 1
+ggplot(data = tibble(x = 1:120), mapping = aes(x = x)) +
+  geom_function(fun = gemm_empirical, size = 1, args = list(deriv = 1), color = "red") + 
+  geom_function(fun = aqli_empirical, size = 1, args = list(deriv = 1), color = "blue") + 
+  scale_y_continuous(breaks = seq(0, 0.2, 0.025), limits = c(0, .175)) +
+  scale_x_continuous(breaks = seq(0, 130, 10)) + 
+  ggthemes::theme_hc() + 
+  labs(x = "PM level (microgram per cubic meter)", y = "Life Years Lost/microgram per cubic meter") +
+  scale_color_manual(values = c("GBD(IER 2019)" = "red", "AQLI" = "blue"))
 
 
 
