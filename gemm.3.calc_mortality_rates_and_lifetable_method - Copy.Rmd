@@ -182,6 +182,28 @@ cleaned_joined_gemm_mr_rr_analysis_data_long_summary <- cleaned_joined_gemm_mr_r
 #>----------------------------------------------------------------------------------------------------------->#
 
 
+#> Prepare age-specific mortalities attributed to PM2.5 (for cause-deleted)------------------------------------------>#
+
+# Note that "cleaned_joined_gemm_mr_rr_analysis_data_long" corresponds to the "file1" tempfile in the STATA scripts. Adding 2 new columns called paf (Population Attributable Fraction) and pm_mortal_rate
+cleaned_joined_gemm_mr_rr_analysis_data_long <- cleaned_joined_gemm_mr_rr_analysis_data_long %>%
+  mutate(paf = 1 - (1/relative_risk), 
+         pm_mortality_rate = paf * adjusted_mortality_rate)
+
+# summary for cause-deleted life table (cdlt): This is the sum of total number of deaths across all 5 causes of death (corresponds to collapse statement that we see in part "f" of the STATA script).
+cleaned_joined_gemm_mr_rr_analysis_data_long_summary_cdlt <- cleaned_joined_gemm_mr_rr_analysis_data_long %>%
+  group_by(age_interval, age_interval_ll, age_interval_ul, age_gap, pm_level) %>%
+  summarise(pm_mortality_rate = sum(pm_mortality_rate, na.rm = TRUE)) %>%
+  ungroup()
+
+# rename pm_mortality_rate to pm_nmx and then converting pm_nmx into a rate by dividing by 100000. The resulting dataset corresponds to "file-3" in the STATA script
+cleaned_joined_gemm_mr_rr_analysis_data_long_summary_cdlt <- cleaned_joined_gemm_mr_rr_analysis_data_long_summary_cdlt %>%
+  rename(pm_nmx = pm_mortality_rate) %>%
+  mutate(pm_nmx = pm_nmx/100000)
+
+
+#>--------------------------------------------------------------------------------------------------------------------------->#
+
+
 
 
 
