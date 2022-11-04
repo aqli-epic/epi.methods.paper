@@ -100,5 +100,52 @@ cleaned_joined_gemm_mr_rr_analysis_data_long$pm_level <- as.numeric(cleaned_join
 
 
 
+
+
+#> Find the pm_level in the "cleaned_joined_gemm_mr_rr_analysis_data_long" dataset that is closest to "global_average_pm2.5" that is set up top in "lib_glob_parameters" chunk.
+
+#> pm2.5 buckets, one of which will contain the global_avg_pm2.5. This bucket will be the one that is closest to the global average PM2.5 value that is set up top. In old STATA scripts, you will find that this process is carried out by a "rounding process". But, that has to be adjusted every year the dataset changes. What I have done below is agnostic to any data changes.
+
+# figure out the unique PM2.5 values in the data and sort them in ascending order
+unique_list_of_pm2.5_val_in_data <- sort(unique(cleaned_joined_gemm_mr_rr_analysis_data_long$pm_level))
+
+# calculate how far the global average pm2.5 value is from each of the values in the above list of unique pm2.5 values
+distance_from_global_avg_pm2.5 <- abs(unique_list_of_pm2.5_val_in_data - global_avg_pm2.5)
+
+# *New assumption in here*: Which pm_level value in our current dataset is the closest to the "global_average_pm2.5"? If there are 2 such values, choose the one with a lower pollution number, so that our estimate is a conservation one (for now)
+potential_pm2.5_buckets_indices <- which(distance_from_global_avg_pm2.5 == min(distance_from_global_avg_pm2.5))
+
+# if there are more than one potential buckets in which the global_average_pm2.5 can land, this conditional statement below chooses the bucket with a lower pm2.5 level. This is a conservative step that we take for now and will reevaluate its implications.
+if(length(potential_pm2.5_buckets_indices) < 2){
+  global_avg_pm2.5_rounded <- unique_list_of_pm2.5_val_in_data[potential_pm2.5_buckets_indices]
+} else {
+  global_avg_pm2.5_rounded <- min(unique_list_of_pm2.5_val_in_data[potential_pm2.5_buckets_indices])
+}
+
+#> create a new temp columm that will be used to create yet another "rr_normalizer" column which will be used to create yet another "adjusted_mortality_rates" column. After generating the "rr_normalizer" column, the "temp" column will be dropped as it would have served its purpose by then. The "temp" column in the step below takes in the relative risk number of those rows where pm_level = "global_avg_pm2.5_rounded" number. In other words, it takes on those relative risk numbers that correspond to the current global average pm2.5 concentration level.  
+
+# create a new "temp" column
+cleaned_joined_gemm_mr_rr_analysis_data_long <- cleaned_joined_gemm_mr_rr_analysis_data_long %>%
+  mutate(temp = ifelse(pm_level == global_avg_pm2.5_rounded, relative_risk, NA))
+
+# group by cause, and age_interval and each row of each of these groups, gets the relative risk number that is equal to mean of "temp" column for that group. Capture this new information in a new column called "rr_normalizer".
+cleaned_joined_gemm_mr_rr_analysis_data_long <- cleaned_joined_gemm_mr_rr_analysis_data_long %>%
+  group_by(cause, age_interval_ll) %>%
+  mutate(rr_normalizer = mean(temp, na.rm = TRUE)) %>%
+  ungroup()
+
+# drop the temp column
+cleaned_joined_gemm_mr_rr_analysis_data_long <- cleaned_joined_gemm_mr_rr_analysis_data_long %>%
+  select(-temp)
+
+# add a new column called "adjusted mortality rate", which adjusts the mortality rate for a given age_cat, cause group, by their RR in relation to the RR at the rounded Global Average PM2.5. Here the assumption is that in the absence of the risk factor, age specific death rates would be proportionally lower. This dataset corresponds to the "file1" dataset in the STATA script. This is what "PM2.5 specific mortality rates" would be if PM2.5 = X. This helps us calcuate mortality rates for any given counterfactual PM2.5 value "X".
+
+cleaned_joined_gemm_mr_rr_analysis_data_long <- cleaned_joined_gemm_mr_rr_analysis_data_long %>%
+  mutate(adjusted_mortality_rate = (mortality_rate * relative_risk)/rr_normalizer)
+
+
+
+
+
 ```
 
