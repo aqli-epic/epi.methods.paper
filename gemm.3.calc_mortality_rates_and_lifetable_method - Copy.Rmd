@@ -315,6 +315,62 @@ actual_life_table <- cleaned_joined_gemm_mr_rr_analysis_data_long_summary
 
 
 
+#> ------------------Calculate "cause deleted" global life table, for various causes------------------------------------------->#
+
+
+#>  We start of with the "cleaned_joined_gemm_mr_rr_analysis_data_long_summary_cdlt" data that we created above (one that corresponds to file-3 tempfile in the corresponding STATA script).
+
+cleaned_joined_gemm_mr_rr_analysis_data_long_summary_cdlt
+
+#> Part 1: Follow Apte et al and Arias et al procedure to derive the counterfactual probability of death after eliminating PM2.5 as a possible cause of death
+
+# For this cause-deleted part of the script, we calculate similar variable as we did for the "actual_life_table" (which was generated using "all causes" data, which to be clear oes not mean sum of 6 disease channels, but rather the actual "all causes" category of data that we download from the GBD) part of the script, but assuming that the death by pm2.5 (occuring via the sum of the 6 disease channels) is eliminated. Given that assumption we calculate a new life table, which we name as the "cause eliminated" life table (because we have eliminated PM2.5 as a cause of death, by summing up the 5 causes mortality data, converted it into life expectancy numbers and then subtracted it from the actual life table). Given this, how does the life expectancy at different age intervals changes and how does that compare to the actual life table? This is the question that we finally answer by taking a difference between the actual table and the cause-eliminated table. 
+
+
+# The following computation is based on Apte et al, 2018 and Arias et al 2013 papers. The terminology is a mix of both so, refer both papers. Although Arias paper explains the underlying concepts in a much more clear fashion.
+
+# Add a alpha_x column to the "cleaned_joined_gemm_mr_rr_analysis_data_long_summary_cdlt" dataset
+cleaned_joined_gemm_mr_rr_analysis_data_long_summary_cdlt <- cleaned_joined_gemm_mr_rr_analysis_data_long_summary_cdlt %>%
+  mutate(alpha_x = 0.5)
+
+# create a new "nqx_attrib" column (See Apte's paper supplemental information section): This is the age specific death rate, attributable to PM2.5
+cleaned_joined_gemm_mr_rr_analysis_data_long_summary_cdlt <- cleaned_joined_gemm_mr_rr_analysis_data_long_summary_cdlt %>%
+  mutate(nqx_attrib = (pm_nmx * age_gap)/(1 + ((1 - alpha_x)*(pm_nmx)*(age_gap))))
+
+# Join the above table with the "actual table" calculated in the section above.
+cleaned_joined_gemm_mr_rr_analysis_data_long_summary_cdlt <- cleaned_joined_gemm_mr_rr_analysis_data_long_summary_cdlt %>%
+  left_join(actual_life_table, by = c("age_interval", "age_interval_ll", "age_interval_ul", "age_gap", "alpha_x", "pm_level"))
+
+#  Compute nqx_deleted using nrx and nqx. nrx = nqx_attrib/nqx in Apte et al (2018) supplemental information section. This is equivalent to pm_nmx/nmx in Arias et al (Equation 6). 
+
+cleaned_joined_gemm_mr_rr_analysis_data_long_summary_cdlt <- cleaned_joined_gemm_mr_rr_analysis_data_long_summary_cdlt %>%
+  mutate(nrx = pm_nmx/nmx, 
+         nqx_del = 1 - ((1 - nqx)^(1 - nrx)))
+
+#> Part-2: Calculate cause deleted life expectancy
+ 
+# Compute lx_del, which is the cause deleted population of cohort still alive at the beginning of age interval and sort by pm_level, age_interval_ll
+cleaned_joined_gemm_mr_rr_analysis_data_long_summary_cdlt <- cleaned_joined_gemm_mr_rr_analysis_data_long_summary_cdlt %>%
+  mutate(lx_del = NA) %>%
+  arrange(pm_level, age_interval_ll)
+
+# Compute "lx_del" (which is the cause-deleted version of lx, which we calculated in the actual life table)
+cleaned_joined_gemm_mr_rr_analysis_data_long_summary_cdlt <- cleaned_joined_gemm_mr_rr_analysis_data_long_summary_cdlt %>%
+   mutate(lx_del = 100000) %>%
+  group_by(pm_level) %>%
+  mutate(lx_del = ifelse(age_interval != "0-1", (lx_del[temp_grp_wise_row_number - 1] * (1 - nqx_del[temp_grp_wise_row_number - 1])), 100000)) %>%
+  ungroup()
+
+
+# Compute "nlx_del" (which is the corresponding version of nlx, which we calculated in the actual life table) using nfx from "actual life table"
+cleaned_joined_gemm_mr_rr_analysis_data_long_summary_cdlt <- cleaned_joined_gemm_mr_rr_analysis_data_long_summary_cdlt %>%
+  mutate(nlx_del = NA) %>%
+  group_by(pm_level) %>%
+  mutate(nlx_del = ((age_gap[temp_grp_wise_row_number] - nfx[temp_grp_wise_row_number]) * (lx_del[temp_grp_wise_row_number])) + (nfx[temp_grp_wise_row_number] * lx[temp_grp_wise_row_number + 1])) %>%
+  ungroup()
+
+
+
 
 
 ```
