@@ -207,6 +207,53 @@ cleaned_joined_gemm_mr_rr_analysis_data_long_summary_cdlt <- cleaned_joined_gemm
 
 
 
+#> Calcualte "Actual" Global Life Table, for various PM2.5 levels (corresponding to start of Part-2 in the STATA script)--------------->#
+
+# Use "adjusted" all cause mortality rates, to compute actual life expectancy at birth in a world where PM2.5 = x (following a combination of Apte's 2018 paper supplemental information doc and Arias 2013 paper, which follow same terminology).
+
+# define alpha_x to be 0.5 for every age group (as in Apte et al.). alpha represents the fraction of the age interval duration that the average dying cohort member survives. Given this alpha_x = 0.5, tells us that we assume deaths take place at the midpoint of each age interval. Note that the dataset we use below is the same one that we prepped above, i.e. "cleaned_joined_gemm_mr_rr_analysis_data_long_summary", i.e. file 2 in the corresponding STATA script.
+
+cleaned_joined_gemm_mr_rr_analysis_data_long_summary <- cleaned_joined_gemm_mr_rr_analysis_data_long_summary %>%
+  mutate(alpha_x = 0.5)
+
+# compute nqx (its the probability of death during the age interval of duration n years i.e.between age x and age x+n)
+# nqx = ndx/lx (equation 3, Arias, et al, 2013 & also Eq.3 of Apte's 2018 supplemental information doc). ndx represents the number of life table cohort deaths in a given age interval (x, x+n), from a given cause.
+
+cleaned_joined_gemm_mr_rr_analysis_data_long_summary <- cleaned_joined_gemm_mr_rr_analysis_data_long_summary %>%
+mutate(nqx = (nmx*age_gap)/(1 + ((1 - alpha_x)*(nmx)*(age_gap))))
+
+# (* Assumption): set nqx = 1, if age_cat = max(age_cat), which as of now is "95+" and sorting by pm_level and age_interval
+cleaned_joined_gemm_mr_rr_analysis_data_long_summary <- cleaned_joined_gemm_mr_rr_analysis_data_long_summary %>%
+  mutate(nqx = ifelse(age_interval == "95+", 1, nqx)) %>%
+  arrange(pm_level, age_interval_ll)
+
+#> Compute lx (Population of cohort still alive at the beginning of the age interval). 
+
+# lx is the survivor function. It considers the surviving population of a hypothetical birth cohort of 100000 individuals at age x. See equation 2 in Apte et al, 2018 (supplemental information doc). In other words, population of the lifetable cohort that is still alive at the beginning of age interval x depends on the number of individuals that are alive at the outset of the previous age interval x-l, and the fraction of members who survived that preceding age interval, (1 - nq(x-1)). For the first age interval (0-1), lx = 100000, because the everyone is alive at the beginning of the first age interval. For every interval, after the first one, we use the formula in equation 3 of the apte paper to calculate lx.
+
+cleaned_joined_gemm_mr_rr_analysis_data_long_summary <- cleaned_joined_gemm_mr_rr_analysis_data_long_summary %>%
+  mutate(lx = 100000) %>%
+  group_by(pm_level) %>%
+  mutate(temp_grp_wise_row_number = dplyr::row_number()) %>%  # adding this column so that we can avoid writing a loop to calculate lx in the next mutate statement
+  mutate(lx = ifelse(age_interval != "0-1", (lx[temp_grp_wise_row_number -1] * (1 - nqx[temp_grp_wise_row_number - 1])), 100000)) %>%
+  ungroup()
+
+#> Compute ndx i.e. the life table cohort deaths in the given  age interval and nlx, i.e. life years lived by the cohort in the given age interval
+cleaned_joined_gemm_mr_rr_analysis_data_long_summary <- cleaned_joined_gemm_mr_rr_analysis_data_long_summary %>%
+  mutate(ndx = lx * nqx,
+         nlx = ndx/nmx)
+
+#> Compute nfx (which is a preparation for calculating the global "cause deleted" life table, that will be calculated after we are done with the "actual life table" calculation.
+cleaned_joined_gemm_mr_rr_analysis_data_long_summary <- cleaned_joined_gemm_mr_rr_analysis_data_long_summary %>%
+  arrange(pm_level, age_interval_ll) %>%
+  mutate(nfx = 0) %>%
+  group_by(pm_level) %>%
+  mutate(nfx = (((age_gap[temp_grp_wise_row_number])*(lx[temp_grp_wise_row_number])) - nlx[temp_grp_wise_row_number])/(lx[temp_grp_wise_row_number] - lx[temp_grp_wise_row_number + 1])) %>%
+  ungroup()
+
+
+
+
 
 ```
 
