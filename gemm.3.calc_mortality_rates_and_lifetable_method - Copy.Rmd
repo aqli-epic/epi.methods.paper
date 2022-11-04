@@ -143,6 +143,45 @@ cleaned_joined_gemm_mr_rr_analysis_data_long <- cleaned_joined_gemm_mr_rr_analys
 cleaned_joined_gemm_mr_rr_analysis_data_long <- cleaned_joined_gemm_mr_rr_analysis_data_long %>%
   mutate(adjusted_mortality_rate = (mortality_rate * relative_risk)/rr_normalizer)
 
+#>---------------------------------------------------------------------------------------------->#
+
+
+
+
+#>-----------------------Prep "all cause" mortality rates (loaded as a separate file up top) for "actual life table computation", adjusted to reflect higher (or lower) mortality rates at PM2.5 concentrations that are higher (or lower) than the global average.------------------------------------------------------------>#
+
+# create a m_diff column, that takes the difference between "actual" and "adjusted" mortality rates
+cleaned_joined_gemm_mr_rr_analysis_data_long <- cleaned_joined_gemm_mr_rr_analysis_data_long %>%
+  mutate(m_diff = adjusted_mortality_rate - mortality_rate)
+
+# * (New Assumption): summarise "cleaned_joined_gemm_mr_rr_analysis_data_long" dataset by summing up "m_diff", grouped by age_cat, pm_level and then sort by "pm_level" and "age_cat". Note that this m_diff_sum (which is calculated using the adjusted mortality rates concerning the 5 causes of deaths) will be used to adjust all cause mortality rates later on in the process. It should be noted that the "m_diff_sum" that we will add to the "all cause mortality" later on in the process, is an adjustment based on the 5 disease channels in question.
+
+cleaned_joined_gemm_mr_rr_analysis_data_long_summary <- cleaned_joined_gemm_mr_rr_analysis_data_long %>%
+  group_by(age_interval_ll, pm_level) %>%
+  summarise(m_diff_sum = sum(m_diff, na.rm = TRUE)) %>%
+  ungroup() %>%
+  arrange(pm_level, age_interval_ll) 
+  
+# (* New Assumption) merging the summary dataset generated in the above step with "cleaned_gemm_mortality_rates_all_causes_only" dataset, using "age_interval" as the linking key. Then rename the "mortality_rate" column to "actual_mr". Note that the "all_causes" dataset does not have a "pm_level" column. So, each age_category in the joined dataset, has an associated set of 21 pm_levels, but for all of those the mortality_rate remains the same (that is an assumption that we make). We then adjust these mortality rates, by adding in the "m_diff_sum" column to the "actual_mr" column (which is the new name of the "mortality_rate" column), the output of which is assigned to the column named "nMx".
+
+cleaned_joined_gemm_mr_rr_analysis_data_long_summary <- cleaned_joined_gemm_mr_rr_analysis_data_long_summary %>%
+  left_join(cleaned_gemm_mortality_rates_all_causes_only, by = "age_interval_ll") %>%
+  arrange(age_interval_ll, pm_level) %>%
+  rename(actual_mr = mortality_rate)
+
+# add a new nMx column, which is created by adding the "m_diff_sum" adjustment to the all cause mortality rates. But, note that "m_diff_sum" was calculated from only 6 PM2.5 specific disease channels. This is what "all cause mortality" rates would be if PM2.5 = X (where "X" is a counterfactual concentration)
+cleaned_joined_gemm_mr_rr_analysis_data_long_summary <- cleaned_joined_gemm_mr_rr_analysis_data_long_summary %>%
+  mutate(nmx = actual_mr + m_diff_sum)
+
+# replace nMx with nmx/100000 (this column represents the "Mortality rate (deaths per person-year), adjusted"): This dataset corresponds to the "file2" dataset in Ken's STATA script. nMx is the mortality incidence rate for age interval between ages x and x + n, expressed in the units of deaths per person-year
+cleaned_joined_gemm_mr_rr_analysis_data_long_summary <- cleaned_joined_gemm_mr_rr_analysis_data_long_summary %>%
+  mutate(nmx = nmx/100000)
+
+
+
+#>----------------------------------------------------------------------------------------------------------->#
+
+
 
 
 
