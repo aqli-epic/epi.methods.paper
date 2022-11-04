@@ -255,5 +255,67 @@ cleaned_joined_gemm_mr_rr_analysis_data_long_summary <- cleaned_joined_gemm_mr_r
 
 
 
+
+#> compute ntx 
+
+# for age_interval_category == max(age_interval_category), set ntx = nlx
+cleaned_joined_gemm_mr_rr_analysis_data_long_summary <- cleaned_joined_gemm_mr_rr_analysis_data_long_summary %>%
+  mutate(ntx = NA,
+    ntx = ifelse(age_interval_category == max(age_interval_category), nlx, ntx))
+
+# for the rest, for each pm_level (group by pm_level) -> update ntx, by starting from max(age_interval_category) - 1 (which in our case will be the 90-94 age interval) and then, go back till the first interval. This means that for a given pm_level group, we would start at the bottom of the group and then go up. 
+
+# number of unique age catgories
+num_unique_age_cat <- max(cleaned_joined_gemm_mr_rr_analysis_data_long_summary$age_interval_category)
+
+# number of unique pm levels (= nrow(cleaned_joined_mort_rr_data_long_summary)/num_unique_age_cat)
+num_unique_pm_levels <- length(unique(cleaned_joined_gemm_mr_rr_analysis_data_long_summary$pm_level))
+
+
+# Each pm level corresponds to 21 age categories and in total there are 122 unique pm levels. To calculate ntx, we use a nested for loop. The first for loop goes through each pm level and for each pm level we go through all age categories (except the max(age_interval_lower, i.e. 95+, for which we have already assigned a value above), but we start from the last age category - 1, i.e. the age category that is one below the max age category (for which we already have a value for ntx). Note that this happens for each pm level, which is why this process repeats 122 times as, 122 is the number of unique pm levels we have in our current dataset. All of this is done so that the following formula for ntx can be implemented in code: ntx = nlx[_n] + ntx[_n+1].
+
+for(i in 1:num_unique_pm_levels){
+  if(i == 1){
+     temp_grp <- cleaned_joined_gemm_mr_rr_analysis_data_long_summary[1 : num_unique_age_cat, ]
+  } else {
+    temp_grp <- cleaned_joined_gemm_mr_rr_analysis_data_long_summary[((((i - 1)*(num_unique_age_cat)) + 1) :(i * num_unique_age_cat)), ]
+  }
+   temp_grp <- temp_grp %>%
+      select(ntx, nlx)
+  print(str_c("Iteration number", i, sep = "-"))
+  for(j in (num_unique_age_cat - 1): 1){
+  temp_grp$ntx[j] <- temp_grp$nlx[j] + temp_grp$ntx[j+1]
+  }
+  if(i == 1){
+     cleaned_joined_gemm_mr_rr_analysis_data_long_summary$ntx[1:num_unique_age_cat] <- temp_grp$ntx
+  } else {
+    cleaned_joined_gemm_mr_rr_analysis_data_long_summary$ntx[((((i - 1)*(num_unique_age_cat)) + 1) :(i * num_unique_age_cat))] <- temp_grp$ntx
+  }
+
+}
+
+#> Compute ex and then roud it to the nearest 1/1000000 
+cleaned_joined_gemm_mr_rr_analysis_data_long_summary <- cleaned_joined_gemm_mr_rr_analysis_data_long_summary %>%
+  mutate(ex = ntx/lx, 
+         ex = plyr::round_any(ex, 0.000001))
+
+
+#> Compute life expectancy at birth 
+actual_life_ex_birth <- cleaned_joined_gemm_mr_rr_analysis_data_long_summary %>%
+  filter(age_interval_ll == 0, pm_level == global_avg_pm2.5_rounded) %>%
+  summarise(avg_life_exp_at_birth = mean(ex))
+
+#> At this stage create a copy of the cleaned_joined_mort_rr_data_long_summary and name it the "actual_table"
+actual_life_table <- cleaned_joined_gemm_mr_rr_analysis_data_long_summary
+
+
+#>------------------------------------------------------------------------------------------------------->#
+
+
+
+
+
+
+
 ```
 
