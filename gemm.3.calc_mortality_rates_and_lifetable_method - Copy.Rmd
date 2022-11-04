@@ -373,5 +373,45 @@ cleaned_joined_gemm_mr_rr_analysis_data_long_summary_cdlt <- cleaned_joined_gemm
 
 
 
+#> Compute tx_del
+
+cleaned_joined_gemm_mr_rr_analysis_data_long_summary_cdlt <- cleaned_joined_gemm_mr_rr_analysis_data_long_summary_cdlt %>%
+  mutate(tx_del = NA,
+         temp_row_num = row_number(),
+         tx_del = ifelse(age_interval == "95+", (ex[temp_row_num]*lx_del[temp_row_num])/(1 - nrx[temp_row_num]), NA))
+
+# Each pm level corresponds to 21 age categories and in total there are 122 unique pm levels. To calculate tx_del, we use a nested for loop. The first for loop goes through each pm level and for each pm level we go through all age categories (except the max(age_interval_lower, i.e. 95+, for which we have already assigned a value above), but we start from the "last age category - 1", i.e. the age category that is one below the max age category (for which we already have a value for tx_del). Note that this happens for each pm level, which is why this process repeats 122 times as, 122 is the number of unique pm levels we have in our current dataset. All of this is done so that the following formula for tx_del can be implemented in code: tx_del[current_grp_wise_row_number + 1] + nlx_del[current_grp_wise_row_number] 
+
+for(i in 1:num_unique_pm_levels){
+  if(i == 1){
+     temp_grp <- cleaned_joined_gemm_mr_rr_analysis_data_long_summary_cdlt[1 : num_unique_age_cat, ]
+  } else {
+    temp_grp <- cleaned_joined_gemm_mr_rr_analysis_data_long_summary_cdlt[((((i - 1)*(num_unique_age_cat)) + 1) : (i * num_unique_age_cat)), ]
+  }
+   temp_grp <- temp_grp %>%
+      select(ex, lx_del, nrx, tx_del, nlx_del) %>%
+  print(str_c("Iteration number", i, sep = "-"))
+  for(j in (num_unique_age_cat - 1): 1){
+  temp_grp$tx_del[j] <- temp_grp$nlx_del[j] + temp_grp$tx_del[j+1]
+  }
+  if(i == 1){
+     cleaned_joined_gemm_mr_rr_analysis_data_long_summary_cdlt$tx_del[1:num_unique_age_cat] <- temp_grp$tx_del
+  } else {
+    cleaned_joined_gemm_mr_rr_analysis_data_long_summary_cdlt$tx_del[((((i - 1)*(num_unique_age_cat)) + 1) :(i * num_unique_age_cat))] <- temp_grp$tx_del
+  }
+
+}
+
+#> Compute counterfactual life expectancy at any given age interval "x"
+
+cleaned_joined_gemm_mr_rr_analysis_data_long_summary_cdlt <- cleaned_joined_gemm_mr_rr_analysis_data_long_summary_cdlt %>%
+  mutate(counterfactual_life_exp = tx_del/lx_del,
+         counterfactual_life_exp = plyr::round_any(counterfactual_life_exp, 0.000001))
+
+
+
+
+
+
 ```
 
