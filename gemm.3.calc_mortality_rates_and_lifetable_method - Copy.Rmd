@@ -411,6 +411,42 @@ cleaned_joined_gemm_mr_rr_analysis_data_long_summary_cdlt <- cleaned_joined_gemm
 
 
 
+#> create final dataset (which is a subset of "cleaned_joined_gemm_mr_rr_analysis_data_long_summary_cdlt") for plotting and generate a "life_years_lost" column, which represents life years lost due to PM2.5 risk. Also generate a new "row number" column in this final dataset.
+cleaned_joined_gemm_mr_rr_analysis_data_long_summary_cdlt_subset <- cleaned_joined_gemm_mr_rr_analysis_data_long_summary_cdlt %>%
+  filter(age_interval == "0-1") %>%
+  rename(ex_actual_life_table = ex) %>%
+  mutate(life_years_lost = counterfactual_life_exp - ex_actual_life_table, 
+         row_id = row_number()) %>%
+  select(pm_level, ex_actual_life_table, counterfactual_life_exp, life_years_lost, row_id) %>%
+  rename(life_years_lost_gemm = life_years_lost) %>%
+  arrange(pm_level) %>%
+  arrange(row_id) %>%
+  select(row_id, pm_level, everything())
+
+#> sanity check: life_years_lost > 0 ?
+
+#> final methods analysis dataset (adding a life years lost column (based on the AQLI methodology) to the  "cleaned_joined_mort_rr_data_long_summary_cdlt_subset" dataset)
+final_methods_analysis_dataset_gemm <- cleaned_joined_gemm_mr_rr_analysis_data_long_summary_cdlt_subset %>%
+  mutate(life_years_lost_aqli = (pm_level - who_pm2.5_guideline)*aqli_lyl_constant)
+
+#> Approximating a derivative function using the "splinefun" function
+gemm_empirical <- splinefun(x = final_methods_analysis_dataset_gemm$pm_level, 
+                                    y = final_methods_analysis_dataset_gemm$life_years_lost_gemm)
+
+# aqli empirical derivative fun
+aqli_empirical <- splinefun(x = final_methods_analysis_dataset_gemm$pm_level, 
+                            y = final_methods_analysis_dataset_gemm$life_years_lost_aqli)
+
+#> create a long version of the final analysis dataset
+final_methods_analysis_dataset_gemm_long <- final_methods_analysis_dataset_gemm %>%
+  pivot_longer(cols = life_years_lost_gemm:life_years_lost_aqli, names_to = "method_name", 
+               values_to = "life_years_lost")
+
+
+
+
+
+
 
 
 ```
