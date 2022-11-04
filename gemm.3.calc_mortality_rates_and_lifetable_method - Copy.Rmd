@@ -57,8 +57,8 @@ global_avg_pm2.5 <- 27.5
 #> Read in the cleaned gemm mortality rates file for NCD + LRI
 cleaned_gemm_mortality_rates_ncd_lri <- read_csv("./data/intermediate/cleaned_gemm_mortality_rates_ncd_lri.csv")
 
-#> Read in the cleaned gemm mortality rates file for 5 causes of deaths as per the gemm paper.
-cleaned_gemm_mortality_rates_5_cod <- read_csv("./data/intermediate/cleaned_gemm_mortality_rates_5_cod.csv")
+#> Read in the cleaned gemm mortality rates file for 5 causes of deaths as per the gemm paper and remove the extra cause_id column
+cleaned_gemm_mortality_rates_5_cod <- read_csv("./data/intermediate/cleaned_gemm_mortality_rates_5_cod.csv") 
 
 #> Read in cleaned gemm "All causes" only, mortality rates file
 cleaned_gemm_mortality_rates_all_causes_only <- read_csv("./data/intermediate/cleaned_gbd_mortality_rates_all_causes_only.csv")
@@ -66,11 +66,37 @@ cleaned_gemm_mortality_rates_all_causes_only <- read_csv("./data/intermediate/cl
 #> Read in the cleaned gemm relative risks file
 cleaned_gemm_relative_risks <- read_csv("./data/intermediate/cleaned_relative_risks_gemm.csv")
 
-#> join the cleaned mortality and relative risks datasets
-cleaned_joined_gemm_mort_5cod_rr_data <- cleaned_gemm_mortality_rates_5_cod %>%
-  left_join(cleaned_gemm_relative_risks, by = c("cause", "age_interval_ll"))
+#> #######----------performing the analysis for 5cod mortality data (the other option is to run all of the below analysis for ncd + lri dataset). Depends on which dataset we are interested in, accordingly we can decide which dataset we need.---------###########
+ 
+#> select the mortality dataset on which the rest of the analysis will be performed (after joining with relative risks). We have 2 options, one is the 5 COD mr data, the other is ncd + lri mr data. As a start, I have chosen the 5 cod data. Note that: if you need to perform analysis for the ncd + lri data, all you need to do is to replace the 5 cod mr data with the ncd+lri data in the line below and the rest of the analysis code remains the same.
 
-#> 
+cleaned_gemm_mr_analysis_data <- cleaned_gemm_mortality_rates_5_cod
+
+
+#> join the cleaned mortality and relative risks datasets
+cleaned_joined_gemm_mr_rr_analysis_data <- cleaned_gemm_mr_analysis_data %>%
+  left_join(cleaned_gemm_relative_risks, by = c("cause", "age_interval_ll")) %>%
+     select(-cause_id.y) %>%
+  rename(cause_id = cause_id.x)
+
+#> dropping redundant columns and renaming certain columns after dropping the redundancies, then reordering the columns. Note that, it is possible that some of the function names for dplyr and plyr might clash. So, use the package prefix, before the function name. For example, to rename a column, use: dplyr::rename(), instead of just rename()
+cleaned_joined_gemm_mr_rr_analysis_data <- cleaned_joined_gemm_mr_rr_analysis_data %>%
+  dplyr::arrange(cause, age_interval_ll)
+
+#> converting the above dataset back into long format, such that "pm_level" and "relative risk" are columns in the new dataset and sort the dataset by cause, pm_level, age_interval
+cleaned_joined_gemm_mr_rr_analysis_data_long <- cleaned_joined_gemm_mr_rr_analysis_data %>%
+  pivot_longer(cols = relative_risk0:relative_risk121, names_to = c("pm_level"), names_pattern = "(\\d+)", values_to = "relative_risk") %>%
+  arrange(cause, age_interval_ll, pm_level)
+
+#> For all age groups less than 25 years of age, relative risks information is not availbale. For these, assume that relative risks = 1. Also replace any missing relative risks information with 1. Below code, replaces all those rows in the "relative_risk" column, where age_interval_ul < 25, with 1. Also, if relative risks data is missing, fill it in with relative risks = 1. 
+
+cleaned_joined_gemm_mr_rr_analysis_data_long <- cleaned_joined_gemm_mr_rr_analysis_data_long %>%
+  mutate(relative_risk = ifelse(age_interval_ul < 25, 1, relative_risk), 
+         relative_risk = ifelse(is.na(relative_risk) == TRUE, 1, relative_risk))
+
+#> coercing certain numeric columns into class "numeric"
+cleaned_joined_gemm_mr_rr_analysis_data_long$pm_level <- as.numeric(cleaned_joined_gemm_mr_rr_analysis_data_long$pm_level)
+
 
 
 
